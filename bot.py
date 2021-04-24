@@ -123,9 +123,7 @@ class MyClient(discord.Client):
         phoenix_status = await self.get_phoenix_status(card_number, card_type)
         text = "Type: {} ID: {}\n\nPhoenix: {}\n\nLayer Artists:\n{}".format(card_type, card_number, phoenix_status, '\n'.join(layer_artist))
         last_price = await self.get_last_sale(card_number)
-        last_sold_for = ""
         if last_price != False:
-            last_sold_for = "Last sold for: {}ETH".format(last_price[0])
             text +="\n\nLast sold for: {}ETH".format(last_price[0])
         if card_type == 'alpha':
             dupes = await self.get_unique_alpha_status(card_number)
@@ -135,7 +133,7 @@ class MyClient(discord.Client):
                 for i in range(0, len(dupes), 1):
                     dupes[i] = dupes[i] + ' '
                 dupes = ''.join(dupes)
-            text += "\n\nDupes: {}".format(dupes)
+            text += "\n\nSeries: {}".format(dupes)
         
         d = ImageDraw.Draw(bg_img)
         w, h = d.textsize(text, font=font)
@@ -289,7 +287,7 @@ class MyClient(discord.Client):
         if message.content.startswith('!help'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             embed=discord.Embed(title="EtherCards Helper Bot", color=0xbe1fda)
-            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!lastsold     0-9999` Show the price a card last sold for.\n`!unique      100-999` Show the unique status of alpha.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
+            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!lastsold     0-9999` Show the price a card last sold for.\n`!series      100-999` Show other cards in series for an alpha.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
             embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type. (Slow due to OS API limits)", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
             embed.add_field(name="About", value="A discord bot created by <@145303558110183424> for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards.", inline=False)
@@ -414,7 +412,7 @@ class MyClient(discord.Client):
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a card number', mention_author=True)   
 
-        if message.content.startswith('!dupes'):
+        if message.content.startswith('!series'):
             args = message.content.split(' ')
             if len(args) == 2:            
                 card_number = args[1].strip()
