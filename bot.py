@@ -417,7 +417,7 @@ class MyClient(discord.Client):
             if len(args) == 2:            
                 card_number = args[1].strip()
                 if card_number.isdigit():
-                    if int(card_number) >= 0 and int(card_number) < 10000:
+                    if int(card_number) >= 100 and int(card_number) < 1000:
                         await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
                         dupes = await self.get_unique_alpha_status(card_number)
                         if dupes != 'None':
