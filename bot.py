@@ -79,16 +79,22 @@ class MyClient(discord.Client):
         font = ImageFont.truetype('./Poppins-Regular.ttf', 48)
         bg_color = (19, 21, 26)
         txt_fill = (255, 255, 255)
+        double_width = True
 
-        with open(os.path.join(self.json_dir, card_number + '.json')) as card_file:
-            data = json.load(card_file)
-            layer_artist = data['layer_artists']
-            layer_url = data['layer_image']
-            title = data['title']
-            artist = data['artist']
-            image_url = data['image']
+        url = 'https://heroku.ether.cards/card/{}/{}.json'.format(int(card_number) % 100, int(card_number))
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as res:
+                data = await res.json()
+                layer_artist = data['layer_artists']
+                layer_url = data['layer_image']
+                title = data['title']
+                artist = data['artist']
+                image_url = data['image']
 
-        if card_type != 'founder' and card_type != 'creator':
+        if layer_url == image_url:
+            double_width = False
+
+        if double_width:
             bg_img = Image.new('RGB', (1920, 1080), color = bg_color)
             img_w, img_h = bg_img.size
             img = Image.open(requests.get(image_url, stream=True).raw)
@@ -105,7 +111,7 @@ class MyClient(discord.Client):
         layer_img = Image.open(requests.get(layer_url, stream=True).raw)
         layer_img.thumbnail(card_img_size, Image.ANTIALIAS)
         layer_img_w, layer_img_h = layer_img.size
-        if card_type != 'founder' and card_type != 'creator':
+        if double_width:
             bg_img.paste(layer_img, (735, 35))
         else:
             bg_img.paste(layer_img, (35, 35))
@@ -113,7 +119,7 @@ class MyClient(discord.Client):
         text = "Artist: Various\nTitle: Accidental Collab"
         d = ImageDraw.Draw(bg_img)
         w, h = d.textsize(text, font=font)
-        if card_type != 'founder' and card_type != 'creator':
+        if double_width:
             d.multiline_text((735 + (layer_img_w-w)/2, 900 + 145-h), text, font=font, fill=txt_fill, align='center')
         else:
             d.multiline_text((35 + (layer_img_w-w)/2, 900 + 145-h), text, font=font, fill=txt_fill, align='center')
@@ -133,11 +139,11 @@ class MyClient(discord.Client):
                 for i in range(0, len(dupes), 1):
                     dupes[i] = dupes[i] + ' '
                 dupes = ''.join(dupes)
-            text += "\n\nSeries: {}".format(dupes)
+            text += "\n\nOthers in set: {}".format(dupes)
         
         d = ImageDraw.Draw(bg_img)
         w, h = d.textsize(text, font=font)
-        if card_type != 'founder' and card_type != 'creator':
+        if double_width:
             d.multiline_text((1663 - w/2, 1080/2 - h/2), text, font=font, fill=txt_fill, align='center')
         else:
             d.multiline_text((960 - w/2, 1080/2 - h/2), text, font=font, fill=txt_fill, align='center')
@@ -146,9 +152,11 @@ class MyClient(discord.Client):
         return './CardSummary.jpg'
 
     async def get_card_data(self, card_number, field):
-        with open(os.path.join(self.json_dir, card_number + '.json')) as card_file:
-            data = json.load(card_file)[field]
-        return data
+        url = 'https://heroku.ether.cards/card/{}/{}.json'.format(int(card_number) % 100, int(card_number))
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as res:
+                data = await res.json()
+                return data[field]
 
     async def get_card_holders(self):
         async with aiohttp.ClientSession() as session:
@@ -157,12 +165,14 @@ class MyClient(discord.Client):
                 return res[0][-2]
 
     async def get_full_art(self, card_number, card_type):
-        with open(os.path.join(self.json_dir, card_number + '.json')) as card_file:
-            if card_type != 'founder' and card_type != 'creator':
-                data = json.load(card_file)['original_art_url']
-            else:
-                data = json.load(card_file)['layer_image']
+        url = 'https://heroku.ether.cards/card/{}/{}.json'.format(int(card_number) % 100, int(card_number))
         async with aiohttp.ClientSession() as session:
+            async with session.get(url) as res:
+                data = await res.json()
+            if card_type != 'founder' and card_type != 'creator':
+                data = data['original_art_url']
+            else:
+                data = data['layer_image']
             # or use a session you already have
             async with session.get(data) as res:
                 buffer = io.BytesIO(await res.read())
@@ -287,8 +297,8 @@ class MyClient(discord.Client):
         if message.content.startswith('!help'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             embed=discord.Embed(title="EtherCards Helper Bot", color=0xbe1fda)
-            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!lastsold     0-9999` Show the price a card last sold for.\n`!series      100-999` Show other cards in series for an alpha.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
-            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type. (Slow due to OS API limits)", inline=False)
+            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!set         100-999` Show other cards in set for an alpha.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
+            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type. (Slow due to OS API limits)\n`!hodlers` Show how many hodlers there currently are", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
             embed.add_field(name="About", value="A discord bot created by <@145303558110183424> for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards.", inline=False)
             embed.set_footer(text="Help requested by {}".format(message.author.name))
@@ -381,8 +391,18 @@ class MyClient(discord.Client):
                 card_number = args[1].strip()
                 if await self.is_valid_card(card_number):
                     await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
-                    artists = await self.get_card_data(card_number, 'layer_artists')
-                    await message.reply('Wen traits', mention_author=True)
+                    traits = await self.get_card_data(card_number, 'traits')
+                    traits_list = {}
+                    for item in traits:
+                        if item['name'] not in traits_list:
+                            traits_list.update({item['name']: 1})
+                        else:
+                            traits_list[item['name']] += 1
+                    traits_list = dict(sorted(traits_list.items(), key=lambda item: item[1]))
+                    traits = ""
+                    for key in traits_list:
+                        traits += f"{key}: {traits_list[key]}\n"
+                    await message.reply('Layer artists for EtherCard ID {}:\n{}'.format(card_number, traits), mention_author=True)
                 else: 
                     await message.add_reaction('\N{CROSS MARK}')
                     await message.reply('Please enter a card number between 0 and 9999', mention_author=True)
@@ -412,7 +432,7 @@ class MyClient(discord.Client):
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a card number', mention_author=True)   
 
-        if message.content.startswith('!series'):
+        if message.content.startswith('!set'):
             args = message.content.split(' ')
             if len(args) == 2:            
                 card_number = args[1].strip()
@@ -422,7 +442,7 @@ class MyClient(discord.Client):
                         dupes = await self.get_unique_alpha_status(card_number)
                         if dupes != 'None':
                             dupes = ', '.join(dupes)
-                        await message.reply('EtherCard ID {} duplicates: {}'.format(card_number, dupes), mention_author=True)
+                        await message.reply('EtherCard ID {} others in set: {}'.format(card_number, dupes), mention_author=True)
                     else: 
                         await message.add_reaction('\N{CROSS MARK}')
                         await message.reply('Please enter a card number between 100 and 999', mention_author=True)
@@ -457,8 +477,8 @@ class MyClient(discord.Client):
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a card number', mention_author=True) 
         
-        if message.content.startswith('wen') or message.content.startswith('when trait'):
-            await message.reply('24-48hrs™️', mention_author=True)
+        if message.content.startswith('wen') or message.content.startswith('Wen'):
+            await message.reply('24-48hrs™️', mention_author=False)
 
         if message.content.startswith('!fullart'):
             args = message.content.split(' ')
@@ -509,7 +529,13 @@ class MyClient(discord.Client):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             floor = await self.floor_update()
             await message.reply(f'OpenSea floors:\nFounder: {floor["founder"]}ETH\nAlpha:     {floor["alpha"]}ETH\nOG:          {floor["og"]}ETH', mention_author=True)
+
+        if message.content.startswith('!hodlers'):
+            await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+            holders = await self.get_card_holders()
+            await message.reply(f'There are currently {holders} hodlers.', mention_author=True)
         
 if __name__ == "__main__":
     client = MyClient()
+    #remember to return to os.environ['token'] after using test bot token
     client.run(os.environ['token'])
