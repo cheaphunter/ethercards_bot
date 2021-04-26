@@ -621,5 +621,4 @@ class MyClient(discord.Client):
         
 if __name__ == "__main__":
     client = MyClient()
-    #client.run(os.environ['token'])
-    client.run('ODM1ODY4MTk5OTAyNzczMjU5.YIVs7A.NOP9U_NmkLX48p0GDv8R7USrLFQ')
+    client.run(os.environ['token'])
