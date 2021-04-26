@@ -242,8 +242,10 @@ class MyClient(discord.Client):
 
     async def get_last_sale(self, card_number):
         url = "https://api.opensea.io/api/v1/asset/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{}".format(card_number)
+        headers = {"X-API-KEY": os.environ['oskey']}
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as res:
+            async with session.get(url,
+                                    headers=headers) as res:
                 data = await res.json()
                 if data['last_sale'] != None:
                     price_in_eth = int(data['last_sale']['total_price'])/10**18
@@ -256,9 +258,11 @@ class MyClient(discord.Client):
         url = "https://api.opensea.io/wyvern/v1/orders"
         founder_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
         og_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100'],"side":"1","sale_kind":"0","limit":"15","offset":"0","order_by":"eth_price","order_direction":"asc"}
+        headers = {"X-API-KEY": os.environ['oskey']}
         async with aiohttp.ClientSession() as session:
             async with session.get(url,
-                                  params=founder_params) as res:
+                                  params=founder_params,
+                                  headers=headers) as res:
                 data = await res.json()
                 for i in data['orders']:
                     if i['closing_date'] == None:
@@ -266,7 +270,8 @@ class MyClient(discord.Client):
                         floor.update({'founder': int(wei)/10**18})
                         break
             async with session.get(url,
-                                  params=og_params) as res:
+                                  params=og_params,
+                                  headers=headers) as res:
                 data = await res.json()
                 for i in data['orders']:
                     if i['closing_date'] == None:
@@ -280,7 +285,8 @@ class MyClient(discord.Client):
                 list_for_token_ids.append(str(i))
             alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
             async with session.get(url,
-                                  params=alpha_params) as res:
+                                  params=alpha_params,
+                                  headers=headers) as res:
                 data = await res.json()
                 for i in data['orders']:
                     if i['closing_date'] == None:
@@ -291,9 +297,9 @@ class MyClient(discord.Client):
             for i in range(375, 650):
                 list_for_token_ids.append(str(i))
             alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            await asyncio.sleep(1)
             async with session.get(url,
-                                  params=alpha_params) as res:
+                                  params=alpha_params,
+                                  headers=headers) as res:
                 data = await res.json()
                 for i in data['orders']:
                     if i['closing_date'] == None:
@@ -304,9 +310,9 @@ class MyClient(discord.Client):
             for i in range(650, 900):
                 list_for_token_ids.append(str(i))
             alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            await asyncio.sleep(1)
             async with session.get(url,
-                                  params=alpha_params) as res:
+                                  params=alpha_params,
+                                  headers=headers) as res:
                 data = await res.json()
                 for i in data['orders']:
                     if i['closing_date'] == None:
@@ -317,9 +323,9 @@ class MyClient(discord.Client):
             for i in range(900, 1000):
                 list_for_token_ids.append(str(i))
             alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            await asyncio.sleep(1)
             async with session.get(url,
-                                  params=alpha_params) as res:
+                                  params=alpha_params,
+                                  headers=headers) as res:
                 data = await res.json()
                 for i in data['orders']:
                     if i['closing_date'] == None:
@@ -615,4 +621,5 @@ class MyClient(discord.Client):
         
 if __name__ == "__main__":
     client = MyClient()
-    client.run(os.environ['token'])
+    #client.run(os.environ['token'])
+    client.run('ODM1ODY4MTk5OTAyNzczMjU5.YIVs7A.NOP9U_NmkLX48p0GDv8R7USrLFQ')
