@@ -1,4 +1,5 @@
 import discord
+from discord.ext import tasks
 import asyncio
 import os
 import json
@@ -6,14 +7,15 @@ import requests
 import aiohttp
 import io
 import random
+import time
 from PIL import Image, ImageDraw, ImageFont
 
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # create the background task and run it in the background
-        self.bg_task = self.loop.create_task(self.update_status())
+        self.update_status.start()
+
         self.json_dir = "../ecgallery/new_json/"
         self.phoenix = [[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]
         ,[100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253]
@@ -225,6 +227,21 @@ class MyClient(discord.Client):
                 res = await res.json()
                 return res[0][-2]
 
+    async def get_7day_vol(self):
+        url = "https://api.opensea.io/api/v1/events"
+        timestamp = time.time() - 604800
+        params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","event_type":"successful","only_opensea":"false","offset":"0","limit":"10000","occurred_after":timestamp}
+        headers = {"X-API-KEY": os.environ['oskey']}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url,
+                                    params=params,
+                                    headers=headers) as res:
+                data = await res.json()   
+                eth_total = 0                                 
+                for row in data['asset_events']:
+                    eth_total += int(row['total_price'])/10**18
+                return eth_total
+
     async def get_full_art(self, card_number, card_type):
         url = 'https://heroku.ether.cards/card/{}/{}.json'.format(int(card_number) % 100, int(card_number))
         async with aiohttp.ClientSession() as session:
@@ -236,7 +253,6 @@ class MyClient(discord.Client):
                 data = data['layer_image']
             async with session.get(data) as res:
                 buffer = io.BytesIO(await res.read())
-                # buffer is a file-like
                 return (buffer, data.split('/')[-1])
         return False
 
@@ -267,7 +283,7 @@ class MyClient(discord.Client):
                 for i in data['orders']:
                     if i['closing_date'] == None:
                         wei = i['base_price']
-                        floor.update({'founder': int(wei)/10**18})
+                        floor.update({'founder': {'cost': int(wei)/10**18, 'id': i['asset']['token_id']}})
                         break
             async with session.get(url,
                                   params=og_params,
@@ -276,7 +292,7 @@ class MyClient(discord.Client):
                 for i in data['orders']:
                     if i['closing_date'] == None:
                         wei = i['base_price']
-                        floor.update({'og': int(wei)/10**18})
+                        floor.update({'og': {'cost': int(wei)/10**18, 'id': i['asset']['token_id']}})
                         break
             #alphas require 4 queries 
             list_for_token_ids = []
@@ -291,7 +307,7 @@ class MyClient(discord.Client):
                 for i in data['orders']:
                     if i['closing_date'] == None:
                         wei = i['base_price']
-                        lowest.append(int(wei)/10**18)
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
             
             list_for_token_ids = []
             for i in range(375, 650):
@@ -304,7 +320,7 @@ class MyClient(discord.Client):
                 for i in data['orders']:
                     if i['closing_date'] == None:
                         wei = i['base_price']
-                        lowest.append(int(wei)/10**18)
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
             
             list_for_token_ids = []
             for i in range(650, 900):
@@ -317,7 +333,7 @@ class MyClient(discord.Client):
                 for i in data['orders']:
                     if i['closing_date'] == None:
                         wei = i['base_price']
-                        lowest.append(int(wei)/10**18)
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
 
             list_for_token_ids = []
             for i in range(900, 1000):
@@ -330,9 +346,15 @@ class MyClient(discord.Client):
                 for i in data['orders']:
                     if i['closing_date'] == None:
                         wei = i['base_price']
-                        lowest.append(int(wei)/10**18)
-            
-            floor.update({'alpha': min(lowest)})
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
+            new_lowest = None
+            for i in lowest:
+                if new_lowest != None:
+                    if i[0] < new_lowest[0]:
+                        new_lowest = i
+                else:
+                    new_lowest = i
+            floor.update({'alpha': {'cost': new_lowest[0], 'id': new_lowest[1]}})
         return floor
     
     async def on_ready(self):
@@ -341,20 +363,24 @@ class MyClient(discord.Client):
         print(self.user.id)
         print('------')
 
+    @tasks.loop(seconds=180)
     async def update_status(self):
+        activities = ['holders', 'founder', 'alpha', 'og', 'vol']
+        choice = random.choice(activities)
+        if choice == 'holders':
+            holders = await self.get_card_holders()
+            activity = f'{holders} hodlers'
+        elif choice == 'vol':
+            vol = await self.get_7day_vol()
+            activity = f'7 Day vol: {round(vol, 2)}ETH'
+        else:
+            floor = await self.floor_update()
+            activity = f'{choice.capitalize()} floor: {floor[choice]["cost"]}ETH'
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='{}'.format(activity)))
+    
+    @update_status.before_loop
+    async def before_update_status(self):
         await self.wait_until_ready()
-        while not self.is_closed():
-            activities = ['holders', 'founder', 'alpha', 'og']
-            choice = random.choice(activities)
-            if choice == 'holders':
-                holders = await self.get_card_holders()
-                activity = '{} hodlers'.format(holders)
-            else:
-                floor = await self.floor_update()
-                activity = '{} floor: {}ETH'.format(choice.capitalize(), floor[choice])
-            print(choice, activity) #debug as seems to be getting stuck on watching alpha floor
-            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='{}'.format(activity)))
-            await asyncio.sleep(300)
 
     async def on_message(self, message):
         if message.author.id == self.user.id: #stop bot replying to its self
@@ -364,7 +390,7 @@ class MyClient(discord.Client):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             embed=discord.Embed(title="EtherCards Helper Bot", color=0xbe1fda)
             embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
-            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type. (Slow due to OS API limits)\n`!hodlers` Show how many hodlers there currently are", inline=False)
+            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
             embed.add_field(name="About", value="A discord bot created by <@145303558110183424> for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards. With some assisstance from <@390320089527746560> and <@302134640947232768>", inline=False)
             embed.set_footer(text="Help requested by {}".format(message.author.name))
@@ -594,7 +620,14 @@ class MyClient(discord.Client):
         if message.content.startswith('!floor'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             floor = await self.floor_update()
-            await message.reply(f'OpenSea floors:\nFounder: {floor["founder"]}ETH\nAlpha:     {floor["alpha"]}ETH\nOG:          {floor["og"]}ETH', mention_author=True)
+            embed=discord.Embed(title="OpenSea floors", color=0xbe1fda)
+            embed.add_field(name="Floors:", value=f'`Founder: `ID: [{floor["founder"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["founder"]["id"]}) - {floor["founder"]["cost"]}ETH\n`Alpha:   `ID: [{floor["alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["alpha"]["id"]}) - {floor["alpha"]["cost"]}ETH\n`OG:      `ID: [{floor["og"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["og"]["id"]}) - {floor["og"]["cost"]}ETH', inline=False)
+            await message.reply(embed=embed, mention_author=True)
+
+        if message.content.startswith('!vol'):
+            await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+            volume = await self.get_7day_vol()
+            await message.reply(f'OpenSea 7 day volume: {round(volume, 2)}ETH', mention_author=True)
 
         if message.content.startswith('!hodlers'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
