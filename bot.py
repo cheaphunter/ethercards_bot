@@ -409,7 +409,7 @@ class MyClient(discord.Client):
         if message.content.startswith('!help'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             embed=discord.Embed(title="EtherCards Helper Bot", color=0xbe1fda)
-            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card for up to 10 cards.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!trait          name` Show details about a trait.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
+            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card for up to 10 cards.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!traitinfo         name` Show details about a trait.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
             embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
             embed.add_field(name="About", value="A discord bot created by <@145303558110183424> for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards. With some assisstance from <@390320089527746560> and <@302134640947232768>", inline=False)
@@ -678,7 +678,7 @@ class MyClient(discord.Client):
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a card number', mention_author=True)
         
-        if message.content.startswith('!trait'):
+        if message.content.startswith('!traitinfo'):
             args = message.content.split(' ')
             args.pop(0)
             trait = ' '.join(args)
@@ -692,7 +692,7 @@ class MyClient(discord.Client):
                             if new_data[i] == trait.lower():
                                 original_trait_name = originals[i]
                         await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
-                        embed=discord.Embed(title=f"The {trait} statistics", color=0xbe1fda)
+                        embed=discord.Embed(title=f"The {original_trait_name}", color=0xbe1fda)
                         embed.add_field(name="Description", value=f"Description: {data[original_trait_name]['Short description']}", inline=False)
                         if "card_ids" in data[original_trait_name] and "percentage" in data[original_trait_name]:
                             embed.add_field(name="Statistics", value=f"Appears on: {data[original_trait_name]['card_ids']}\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
