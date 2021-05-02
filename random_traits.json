@@ -1,0 +1,268 @@
+{
+   "Unicorn": {
+      "card type": "all",
+      "id": 101,
+      "max issuance": 500,
+      "filename": "unicorn",
+      "Short description": "Vanity Trait (for now)"
+   },
+   "Reforge": {
+      "card type": "all",
+      "trait type": "reforge",
+      "id": 102,
+      "max issuance": 2500,
+      "filename": "reforge",
+      "Short description": "One time ability to re-randomize any (or all) selected layers in the main accidental art image of the card"
+   },
+   "Reforge +": {
+      "card type": "all",
+      "trait type": "reforge",
+      "id": 103,
+      "max issuance": 500,
+      "filename": "reforgeplus",
+      "Short description": "Reforges selected layers & can guarantee a non-common layer"
+   },
+   "Art Drop": {
+      "card type": "all",
+      "id": 104,
+      "max issuance": 1000,
+      "filename": "artdrop",
+      "Short description": "To receive free art drops from artists"
+   },
+   "Redeemable": {
+      "card type": "all",
+      "id": 105,
+      "max issuance": 10,
+      "filename": "redeemable",
+      "Short description": "added on redeemable items",
+      "card_ids": "270,410,657,974,1601,2570,6607,7301,8153,9121",
+      "percentage": "0.1%"
+   },
+   "Alpha Upgrade": {
+      "card type": "founder",
+      "trait type": "upgrade",
+      "id": 106,
+      "max issuance": 50,
+      "filename": "alphaupgrade",
+      "Short description": "Replace this card with an Alpha card from Ethercard’s vault (replacement card is chosen by Ethercards)",
+      "card_ids": "1067,1869,1947,2126,2247,2385,2468,2800,2992,3079,3165,3794,3882,4013,4054,4539,4799,5034,5069,5145,5425,5669,5992,6404,6408,6452,6465,6608,6673,6704,6947,7567,7697,7802,7920,8154,8265,8332,8559,8861,8864,9072,9104,9401,9541,9548,9598,9648,9669,9693",
+      "percentage": "0.56%"
+   },
+   "OG Upgrade": {
+      "card type": "founder,alpha",
+      "trait type": "upgrade",
+      "id": 107,
+      "max issuance": 3,
+      "filename": "ogupgrade",
+      "Short description": "Replace this card with an OG card from Ethercard’s vault (replacement card is chosen by Ethercards)",
+      "card_ids": "4517,7428,9414",
+      "percentage": "0.03%"
+   },
+   "Extra Limited Trait Slot": {
+      "card type": "all",
+      "id": 108,
+      "max issuance": 1000,
+      "filename": "extraslot",
+      "Short description": "Gain an extra limited trait slot on this card"
+   },
+   "Forge Protector": {
+      "card type": "all",
+      "id": 109,
+      "max issuance": 2500,
+      "filename": "forgeprotector",
+      "Short description": "One-time protection against the forge. This card will not get destroyed when used in the forge. "
+   },
+   "50% Discount": {
+      "card type": "all",
+      "trait type": "discount",
+      "id": 110,
+      "max issuance": 100,
+      "filename": "discount50",
+      "Short description": "One time discount, max 1 ETH value"
+   },
+   "25% Discount": {
+      "card type": "all",
+      "trait type": "discount",
+      "id": 111,
+      "max issuance": 250,
+      "filename": "discount25",
+      "Short description": "One time discount, max 1 ETH value"
+   },
+   "10% Discount": {
+      "card type": "all",
+      "trait type": "discount",
+      "id": 112,
+      "max issuance": 500,
+      "filename": "discount10",
+      "Short description": "One time discount, max 1 ETH value"
+   },
+   "5% Discount": {
+      "card type": "all",
+      "trait type": "discount",
+      "id": 113,
+      "max issuance": 1200,
+      "filename": "discount5",
+      "Short description": "One time discount, max 1 ETH value"
+   },
+   "Free Ticket": {
+      "card type": "all",
+      "id": 114,
+      "max issuance": 1500,
+      "filename": "freeticket",
+      "Short description": "One time free ticket to any participating raffle"
+   },
+   "Lucky Reroll": {
+      "card type": "founder, alpha",
+      "id": 115,
+      "max issuance": 500,
+      "filename": "luckyreroll",
+      "Short description": "This card can use reroll and have the same chances as an OG card to get random traits"
+   },
+   "Rando Dropper": {
+      "card type": "all",
+      "trait type": "dropper",
+      "id": 116,
+      "max issuance": 500,
+      "filename": "randodropper",
+      "Short description": "Drops a random common Trait to the card. Replaces it once a month. Can burn the Rando Trait to keep the Trait."
+   },
+   "Disco Dropper": {
+      "card type": "all",
+      "trait type": "dropper",
+      "id": 117,
+      "max issuance": 1500,
+      "filename": "discodropper",
+      "Short description": "Drops a random common Discount to the card. Replaces it once a month. Can burn the Disco Dropper Trait to keep the Trait."
+   },
+   "Fluid": {
+      "card type": "all",
+      "trait type": "experimental",
+      "id": 118,
+      "max issuance": 30,
+      "filename": "fluid",
+      "Short description": "Card is able to reroll layers (and maybe traits) once a month",
+      "card_ids": "224,319,335,362,756,941,1150,2594,3308,3496,3566,5042,5103,5718,6181,6211,7027,7566,7593,7627,7863,8142,8262,8298,8350,8478,8710,9157,9608,9972",
+      "percentage": "0.3%"
+   },
+   "Selective Layer Reroll": {
+      "card type": "all",
+      "id": 119,
+      "max issuance": 900,
+      "filename": "selectivereroll",
+      "Short description": "This trait rerolls the selected layers on your card. (Maybe with a higher chance of rerolling into the artist of your unique artwork (if Alpha or OG)). The trait is burned when used."
+   },
+   "Swap": {
+      "card type": "all",
+      "trait type": "swap",
+      "id": 120,
+      "max issuance": 50,
+      "filename": "swap",
+      "Short description": "Allows to replace your card from another card of the same class from the vault (availability, T&C applies",
+      "card_ids": "21,43,54,232,244,248,257,578,854,997,1393,1676,2487,2584,2810,2884,3215,3378,3643,4032,4372,4864,4920,4923,5102,5395,5438,5770,5798,5903,5969,5984,6169,6328,6500,6669,7112,7392,7951,8237,8523,8660,8763,9101,9268,9448,9463,9537,9652,9763",
+      "percentage": "0.5%"
+   },
+   "Golden Goose": {
+      "card type": "all",
+      "trait type": "dropper",
+      "id": 121,
+      "max issuance": 25,
+      "filename": "goose",
+      "Short description": "this trait will drop a mystery bag for free every time Ether Cards holds a Mystery Bag event.",
+      "card_ids": "50,236,637,1193,1490,1703,1946,1973,2226,2338,3015,3105,3262,3473,3879,4137,5200,5518,5731,7238,7243,7351,8655,8867,9753",
+      "percentage": "0.25%"
+   },
+   "Redeem": {
+      "card type": "all",
+      "trait type": "redeem",
+      "id": 122,
+      "max issuance": 70,
+      "filename": "redeemable",
+      "Short description": "Consume this trait to be sent a physical Ether Card with your cards artwork. (T&C applies)",
+      "card_ids": "87,569,625,823,970,1245,1291,1871,2164,2368,2396,2596,2615,2635,2893,2907,3207,3228,3299,3336,3690,4033,4048,4447,4714,4755,4952,5020,5110,5182,5415,5452,5478,5656,6093,6118,6230,6247,6275,6504,6516,6519,6744,6951,7302,7321,7539,7548,7594,7626,7742,7829,8253,8706,8751,8990,9006,9251,9325,9431,9435,9521,9688,9704,9747,9793,9835,9854,9856,9905",
+      "percentage": "0.7%"
+   },
+   "Unstable": {
+      "card type": "all",
+      "trait type": "experimental",
+      "id": 123,
+      "max issuance": 300,
+      "filename": "unstable",
+      "Short description": "Each time the card is traded on Open Sea (or changes wallets) a random trait changes to a random trait"
+   },
+   "True Name": {
+      "card type": "all",
+      "id": 124,
+      "max issuance": 900,
+      "filename": "truename",
+      "Short description": "Enables the holders of this trait to name their Ether.Cards/Accidental Collabs"
+   },
+   "Warp Rabbit": {
+      "card type": "all",
+      "trait type": "experimental",
+      "id": 125,
+      "max issuance": 5,
+      "filename": "warprabbit",
+      "Short description": "Upon activation Warp Rabbit does an action possibly influenced by the state of your card/wallet. Maybe it has a chance to drop a basic trait if you only have Founders. Maybe it has a chance to add to your dust if you’re near empty. Maybe if you burned a lot of cards in the forge, it drops an angry NFT calling you an arsonist. Maybe it does nothing. After delivering the effect, it disappears and selects a new card to appear in. And the cycle starts over.",
+      "card_ids": "4138,5081,5572,7660,9591",
+      "percentage": "0.06%"
+   },
+   "Synthesis Ritual": {
+      "card type": "all",
+      "id": 126,
+      "max issuance": 350,
+      "filename": "sythesis",
+      "Short description": "Uses the grid to create a forgeable layer set. Details later."
+   },
+   "Merch": {
+      "card type": "all",
+      "trait type": "redeem",
+      "id": 127,
+      "max issuance": 100,
+      "filename": "merch",
+      "Short description": "Some cards can get a special trait that can be burned for a physical item ( ethercards hoodie, etc ) (shipping fees apply)"
+   },
+   "Gravity": {
+      "card type": "all",
+      "trait type": "experimental",
+      "id": 128,
+      "max issuance": 35,
+      "filename": "gravity",
+      "Short description": "a card with gravity trait will attract cards sacrificed by the forge, and perhaps some additional perks. The goal could be to evolve your gravity to be a supermassive black hole that sucks up all kinds of awesome stuff.",
+      "card_ids": "214,233,382,438,487,909,1496,1706,1729,1757,2263,2449,2849,3106,3194,3288,3544,3576,3601,3802,4475,4862,5286,5351,5392,5781,7343,7798,7897,8663,8817,9073,9516,9669,9772",
+      "percentage": "0.35%"
+   },
+   "New Commons": {
+      "card type": "all",
+      "id": 129,
+      "max issuance": 1200,
+      "filename": "newcommons",
+      "Short description": "Rerolls only common layers, maybe allowing you to choose of one of two choices for each."
+   },
+   "Glittery": {
+      "card type": "all",
+      "id": 130,
+      "max issuance": 88,
+      "filename": "glittery",
+      "Short description": "glitter layer or animated layer added to the existing ether card - currently we have all static layer so may be a glittery or animated layers can be added as a special trait - during competitions or to the winners in the competitions",
+      "card_ids": "50,68,70,264,479,482,504,519,554,672,787,814,835,884,942,973,1005,1156,1380,1393,1542,1711,1715,1881,2020,2041,2053,2082,2149,2625,2675,2940,3042,3049,3190,3274,3289,3291,3430,3596,3742,4096,4191,4279,4321,4420,4817,4877,5066,5078,5296,5347,5411,5530,5558,5584,5604,5903,5929,6021,6070,6270,6410,6454,6478,6888,7085,7267,7833,7866,7936,8000,8134,8222,8576,8579,8712,8771,9080,9322,9375,9451,9467,9837,9839,9914,9922,9997",
+      "percentage": "0.88%"
+   },
+   "1 UP": {
+      "card type": "all",
+      "trait type": "drop",
+      "id": 131,
+      "max issuance": 350,
+      "filename": "1up",
+      "Short description": "once you burn this trait you get an extra Life to use in Royal or Punks battle"
+   },
+   "Good Company": {
+      "card type": "all",
+      "trait type": "drop",
+      "id": 132,
+      "max issuance": 50,
+      "filename": "goodcompany",
+      "Short description": "If you burn this trait you will receive another card from the vault (T&C applies)",
+      "card_ids": "37,130,151,309,527,575,713,730,1359,1463,1591,1598,1885,1918,1925,2159,2930,3415,3508,3881,3983,4329,4644,4823,5022,5193,5267,5381,5535,5779,6000,6304,6333,6384,6439,6605,7429,7492,7734,7783,7880,7941,7952,7964,8142,8342,8492,8652,9176,9933",
+      "percentage": "0.5%"
+   }
+}
