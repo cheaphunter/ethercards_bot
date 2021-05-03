@@ -196,8 +196,11 @@ class MyClient(discord.Client):
             phoenix_status = await self.get_phoenix_status(card_number, card_type)
             text = "Type: {} ID: {}\n\nPhoenix: {}\n\nLayer Artists:\n{}".format(card_type, card_number, phoenix_status, '\n'.join(layer_artist))
             last_price = await self.get_last_sale(card_number)
+            current_price = await self.get_current_price(card_number)
             if last_price != False:
                 text +="\n\nLast sold for: {}ETH".format(last_price[0])
+            if current_price != False:
+                text +="\n\nCurrent price: {}ETH".format(current_price)
             if card_type == 'alpha':
                 dupes = await self.get_unique_alpha_status(card_number)
                 if dupes != 'None':
@@ -260,6 +263,21 @@ class MyClient(discord.Client):
                 return (buffer, data.split('/')[-1])
         return False
 
+    async def get_current_price(self, card_number):
+        url = "https://api.opensea.io/wyvern/v1/orders"
+        params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_id": str(card_number),"side":"1","sale_kind":"0","limit":"1","offset":"0","order_by":"eth_price","order_direction":"asc"}
+        headers = {"X-API-KEY": os.environ['oskey']}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url,
+                                  params=params,
+                                  headers=headers) as res:
+                data = await res.json()
+                for i in data['orders']:
+                    if i['closing_date'] == None:
+                        wei = i['base_price']
+                        return int(wei)/10**18
+        return False
+
     async def get_last_sale(self, card_number):
         url = "https://api.opensea.io/api/v1/asset/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{}".format(card_number)
         headers = {"X-API-KEY": os.environ['oskey']}
@@ -272,23 +290,74 @@ class MyClient(discord.Client):
                     price_in_dol = price_in_eth * float(data['last_sale']['payment_token']['usd_price'])
                     return (price_in_eth, price_in_dol)
         return False
+
+    async def get_trait_floor(self, card_list):
+        url = "https://api.opensea.io/wyvern/v1/orders"
+        headers = {"X-API-KEY": os.environ['oskey']}
+        async with aiohttp.ClientSession() as session:
+            if len(card_list) <= 500:
+                if len(card_list) > 250:
+                    card_list_1 = card_list[:len(card_list)//2]
+                    card_list_2 = card_list[len(card_list)//2:]
+                    card_list_1 = list(map(str, card_list_1))
+                    card_list_2 = list(map(str, card_list_2))
+                    lowest_price = {}
+                    params_1 = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": card_list_1,"side":"1","sale_kind":"0","limit":"50","offset":"0","order_by":"eth_price","order_direction":"asc"}
+                    async with session.get(url,
+                                            params=params_1,
+                                            headers=headers) as res:
+                        data = await res.json()
+                        for i in data['orders']:
+                            if i['closing_date'] == None:
+                                wei = i['base_price']
+                                if 'cost' not in lowest_price:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                elif int(wei)/10**18 < lowest_price['cost']:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                    params_2 = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": card_list_2,"side":"1","sale_kind":"0","limit":"50","offset":"0","order_by":"eth_price","order_direction":"asc"}
+                    async with session.get(url,
+                                            params=params_2,
+                                            headers=headers) as res:
+                        data = await res.json()
+                        for i in data['orders']:
+                            if i['closing_date'] == None:
+                                wei = i['base_price']
+                                if 'cost' not in lowest_price:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                elif int(wei)/10**18 < lowest_price['cost']:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                    return lowest_price
+                else:
+                    card_list = list(map(str, card_list))
+                    params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": card_list,"side":"1","sale_kind":"0","limit":"50","offset":"0","order_by":"eth_price","order_direction":"asc"}
+                    async with session.get(url,
+                                            params=params,
+                                            headers=headers) as res:
+                        data = await res.json()
+                        lowest_price = {}
+                        for i in data['orders']:
+                            if i['closing_date'] == None:
+                                wei = i['base_price']
+                                if 'cost' not in lowest_price:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                elif int(wei)/10**18 < lowest_price['cost']:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                return lowest_price
+        return False
     
     async def floor_update(self):
         floor = {}
         url = "https://api.opensea.io/wyvern/v1/orders"
-        founder_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
+        #founder_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
         og_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100'],"side":"1","sale_kind":"0","limit":"15","offset":"0","order_by":"eth_price","order_direction":"asc"}
         headers = {"X-API-KEY": os.environ['oskey']}
         async with aiohttp.ClientSession() as session:
-            async with session.get(url,
-                                  params=founder_params,
-                                  headers=headers) as res:
-                data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
-                        floor.update({'founder': {'cost': int(wei)/10**18, 'id': i['asset']['token_id']}})
-                        break
             async with session.get(url,
                                   params=og_params,
                                   headers=headers) as res:
@@ -385,7 +454,7 @@ class MyClient(discord.Client):
 
     @tasks.loop(seconds=180)
     async def update_status(self):
-        activities = ['holders', 'founder', 'alpha', 'og', 'vol']
+        activities = ['holders', 'alpha', 'og', 'vol']
         choice = random.choice(activities)
         if choice == 'holders':
             holders = await self.get_card_holders()
@@ -409,8 +478,8 @@ class MyClient(discord.Client):
         if message.content.startswith('!help'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             embed=discord.Embed(title="EtherCards Helper Bot", color=0xbe1fda)
-            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card for up to 10 cards.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!traitinfo         name` Show details about a trait.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
-            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!floor` Show the floor price of each card type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
+            embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card for up to 10 cards.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!traitinfo      name` Show details about a trait.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
+            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!currentprice  0-9999` Show the price the card is currently available for.\n`!floor` Show the floor price of each card type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
             embed.add_field(name="About", value="A discord bot created by <@145303558110183424> for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards. With some assisstance from <@390320089527746560> and <@302134640947232768>", inline=False)
             embed.set_footer(text="Help requested by {}".format(message.author.name))
@@ -561,6 +630,27 @@ class MyClient(discord.Client):
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a card number', mention_author=True) 
         
+        if message.content.startswith('!currentprice'):
+            args = message.content.split(' ')
+            if len(args) == 2:            
+                card_number = args[1].strip()
+                if await self.is_valid_card(card_number):
+                    await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                    current_price = await self.get_current_price(card_number)
+                    if current_price != False:
+                        await message.reply('EtherCard ID {} is for sale for: {}ETH'.format(card_number, current_price), mention_author=True)
+                    else:
+                        await message.reply('EtherCard ID {} is not for sale.'.format(card_number), mention_author=True)
+                else: 
+                    await message.add_reaction('\N{CROSS MARK}')
+                    await message.reply('Please enter a card number between 0 and 9999', mention_author=True)
+            elif len(args) > 2:
+                await message.add_reaction('\N{CROSS MARK}')
+                await message.reply('Please enter only one card number', mention_author=True)  
+            else:
+                await message.add_reaction('\N{CROSS MARK}')
+                await message.reply('Please enter a card number', mention_author=True) 
+        
         if message.content.startswith('wen') or message.content.startswith('Wen'):
             await message.reply('24-48hrs™️', mention_author=False)
 
@@ -613,7 +703,7 @@ class MyClient(discord.Client):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             floor = await self.floor_update()
             embed=discord.Embed(title="OpenSea floors", color=0xbe1fda)
-            embed.add_field(name="Floors:", value=f'`Founder: `ID: [{floor["founder"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["founder"]["id"]}) - {floor["founder"]["cost"]}ETH\n`Alpha:   `ID: [{floor["alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["alpha"]["id"]}) - {floor["alpha"]["cost"]}ETH\n`OG:      `ID: [{floor["og"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["og"]["id"]}) - {floor["og"]["cost"]}ETH', inline=False)
+            embed.add_field(name="Floors:", value=f'`Founder: `[OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Founder)\n`Alpha:   `ID: [{floor["alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["alpha"]["id"]}) - {floor["alpha"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Alpha)\n`OG:      `ID: [{floor["og"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["og"]["id"]}) - {floor["og"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=OG)', inline=False)
             await message.reply(embed=embed, mention_author=True)
 
         if message.content.startswith('!vol'):
@@ -646,7 +736,7 @@ class MyClient(discord.Client):
 
         if message.content.startswith('!traits'):
             args = message.content.split(' ')
-            if len(args) >= 2 and len(args) <= 10:
+            if len(args) >= 2 and len(args) <= 11:
                 await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
                 traits_dict = {}
                 for card_number in args: 
@@ -667,9 +757,9 @@ class MyClient(discord.Client):
                 traits = ""
                 for card in traits_dict:
                     if traits_dict[card] != "None" and len(list(traits_dict[card])) != 0:
-                        traits += f"ID: {card}: {', '.join(traits_dict[card])}\n"
+                        traits += f"**ID {card}**: {', '.join(traits_dict[card])}\n\n"
                     else:
-                        traits += f"ID: {card}: None\n"
+                        traits += f"**ID {card}**: None\n"
                 await message.reply('Traits for: \n{}'.format(traits), mention_author=True)
             elif len(args) > 10:
                 await message.add_reaction('\N{CROSS MARK}')
@@ -692,10 +782,18 @@ class MyClient(discord.Client):
                             if new_data[i] == trait.lower():
                                 original_trait_name = originals[i]
                         await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
-                        embed=discord.Embed(title=f"The {original_trait_name}", color=0xbe1fda)
-                        embed.add_field(name="Description", value=f"Description: {data[original_trait_name]['Short description']}", inline=False)
-                        if "card_ids" in data[original_trait_name] and "percentage" in data[original_trait_name]:
-                            embed.add_field(name="Statistics", value=f"Appears on: {data[original_trait_name]['card_ids']}\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
+                        embed=discord.Embed(title=f"The {original_trait_name} trait", color=0xbe1fda)
+                        embed.add_field(name="Description", value=f"{data[original_trait_name]['Short description'].capitalize()}", inline=False)
+                        if "card_ids" in data[original_trait_name]:
+                            lowest_available_price = await self.get_trait_floor(data[original_trait_name]['card_ids'])
+                            if lowest_available_price != False:
+                                embed.add_field(name="Statistics", value=f"Card type: {data[original_trait_name]['card type'].capitalize()}\nFloor price: {lowest_available_price['cost']}ETH ID: [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
+                            else:
+                                embed.add_field(name="Statistics", value=f"Card type: {data[original_trait_name]['card type'].capitalize()}\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
+                            if len(data[original_trait_name]['card_ids']) < 300:
+                                embed.add_field(name="Appears on", value=f"Card type: {data[original_trait_name]['card type'].capitalize()}\nAppears on: {', '.join(str(x) for x in data[original_trait_name]['card_ids'])}\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
+                        else:
+                            embed.add_field(name="Statistics", value=f"Card type: {data[original_trait_name]['card type'].capitalize()}\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
                         embed.set_footer(text="Information requested by {}".format(message.author.name))
                         await message.reply(embed=embed, mention_author=True)
                     else:
