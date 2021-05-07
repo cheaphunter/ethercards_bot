@@ -429,22 +429,6 @@ class MyClient(discord.Client):
                     new_lowest = i
             floor.update({'alpha': {'cost': new_lowest[0], 'id': new_lowest[1]}})
         return floor
-
-    async def get_traits(self, card_number):
-        card_number = int(card_number)
-        if card_number < 10:
-            return "None"
-        elif card_number < 100:
-            new_number = ((card_number + self.og_rand) % 90) + 10
-        elif card_number < 1000:
-            new_number = ((card_number + self.alpha_rand) % 900) + 100
-        else:
-            new_number = ((card_number + self.founder_rand) % 9000) + 1000
-        url = "https://ether-cards.mypinata.cloud/ipfs/QmfC87yxZKPSU3vQdsh8CBdgJttrLDJmS1HSfFfYqeRyUQ/{}/{}.json".format(new_number % 100, new_number)
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as res:
-                data = await res.json()
-                return data['traits']
     
     async def on_ready(self):
         print('Logged in as')
@@ -479,9 +463,9 @@ class MyClient(discord.Client):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             embed=discord.Embed(title="EtherCards Helper Bot", color=0xbe1fda)
             embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card for up to 10 cards.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!traitinfo      name` Show details about a trait.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
-            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!currentprice  0-9999` Show the price the card is currently available for.\n`!floor` Show the floor price of each card type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
+            embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!currentprice  0-9999` Show the price the card is currently available for.\n`!floor` Show the floor price of each card type.\n`!traitfloors` Show the floor price for each trait type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
-            embed.add_field(name="About", value="A discord bot created by <@145303558110183424> for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards. With some assisstance from <@390320089527746560> and <@302134640947232768>", inline=False)
+            embed.add_field(name="About", value="A discord bot created by <@145303558110183424>(0x1aD45017b09D2C36b84440cB82426dA645F8048A) for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards. With some assisstance from <@390320089527746560> and <@302134640947232768>", inline=False)
             embed.set_footer(text="Help requested by {}".format(message.author.name))
             await message.reply(embed=embed, mention_author=True)
             
@@ -737,30 +721,47 @@ class MyClient(discord.Client):
         if message.content.startswith('!traits'):
             args = message.content.split(' ')
             if len(args) >= 2 and len(args) <= 11:
-                await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                numbers = False
+                for card_number in args: 
+                    if card_number != "!traits":
+                        if await self.is_valid_card(card_number.strip()):
+                            numbers = True
+                            break
+                if numbers:
+                    await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')                
+                else:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    await message.reply('Please enter a valid card number', mention_author=True)
                 traits_dict = {}
                 for card_number in args: 
                     if card_number != "!traits":
                         if await self.is_valid_card(card_number.strip()):
-                            meta_traits = await self.get_card_data(card_number, 'traits')
-                            traits = await self.get_traits(card_number)
-                            traits_list = {}
-                            for item in meta_traits:
-                                if item['name'] not in traits_list:
-                                    traits_list.update({item['name']: 1})
-                                else:
-                                    traits_list[item['name']] += 1
-                            for key in traits_list:
-                                traits.append(f"{key}: {traits_list[key]}")
-                            traits_dict[card_number] = traits
-                            
+                            traits = await self.get_card_data(card_number, 'traits')
+                            if len(traits) != 0:
+                                for item in traits:
+                                    if card_number in traits_dict:
+                                        if item['name'] not in traits_dict[card_number]:
+                                            traits_dict[card_number].update({item['name']: 1})
+                                        else:
+                                            traits_dict[card_number][item['name']] += 1
+                                    else:
+                                        traits_dict[card_number] = {item['name']: 1}
+                            else:
+                                traits_dict[card_number] = "None"        
                 traits = ""
                 for card in traits_dict:
-                    if traits_dict[card] != "None" and len(list(traits_dict[card])) != 0:
-                        traits += f"**ID {card}**: {', '.join(traits_dict[card])}\n\n"
+                    if traits_dict[card] != 'None':
+                        trait_list = []
+                        for trait in traits_dict[card]:
+                            if traits_dict[card][trait] != 1:
+                                trait_list.append(f"{trait} x {traits_dict[card][trait]}")
+                            else:
+                                trait_list.append(f"{trait}")
+                        traits += f"**ID {card}**: {', '.join(trait_list)}\n\n"
                     else:
-                        traits += f"**ID {card}**: None\n"
-                await message.reply('Traits for: \n{}'.format(traits), mention_author=True)
+                        traits += f"**ID {card}**: None\n\n"
+                if traits != "":
+                    await message.reply('Traits for: \n{}'.format(traits), mention_author=True)
             elif len(args) > 10:
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a maximum of 10 card numbers', mention_author=True)  
@@ -802,6 +803,30 @@ class MyClient(discord.Client):
             else:
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a trait', mention_author=True)
+
+        if message.content.startswith('!traitfloors'):
+            await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+            with open('random_traits.json') as trait_data:
+                data = json.load(trait_data)
+                embed=discord.Embed(title="Trait floors", color=0xbe1fda)
+                floors = ""#have to do this because 1024 embed field limit even though it's all hyperlinks
+                floors2 = ""
+                count = 0
+                table = """```
+                ```"""
+                for key in data:
+                    count += 1
+                    if "card_ids" in data[key]:
+                        lowest_available_price = await self.get_trait_floor(data[key]['card_ids'])
+                        if lowest_available_price:
+                            if count < 20:
+                                floors += f"{key}: {lowest_available_price['cost']}ETH - [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\n"
+                            else:
+                                floors2 += f"{key}: {lowest_available_price['cost']}ETH - [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\n"
+                embed.add_field(name="Floors", value=f"{floors}", inline=False)
+                embed.add_field(name="More floors", value=f"{floors2}", inline=False)
+                embed.set_footer(text="Information requested by {}".format(message.author.name))
+                await message.reply(embed=embed, mention_author=True)
         
 if __name__ == "__main__":
     client = MyClient()

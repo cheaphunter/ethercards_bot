@@ -305,5 +305,26 @@
       "Short description": "Standard reroll. Applied on OGs and Alphas if it didn't get enough random traits naturally.",
       "card_ids": [13,227,234,237,269,271,291,363,365,367,379,381,389,428,439,523,536,568,609,663,727,810,825,840,926],
       "percentage": "0.25%"
+   },
+   "Phoenix": {
+      "card type": "all",
+      "max issuance": 1803,
+      "filename": "phoenix",
+      "Short description": "Pre sale cards. Will get art drops and other benefits to be announced.",
+      "percentage": "18.03%"
+   },
+   "Royalty Battle Ticket": {
+      "card type": "all",
+      "max issuance": 11070,
+      "filename": "reroll",
+      "Short description": "An entry ticket for the Royalty Battle event.",
+      "percentage": "18.03%"
+   },
+   "Punk Battle Royale Ticket": {
+      "card type": "all",
+      "max issuance": 11070,
+      "filename": "reroll",
+      "Short description": "An entry ticket for the Punk Battle Royale event.",
+      "percentage": "18.03%"
    }
 }
