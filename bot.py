@@ -819,10 +819,11 @@ class MyClient(discord.Client):
                     if "card_ids" in data[key]:
                         lowest_available_price = await self.get_trait_floor(data[key]['card_ids'])
                         if lowest_available_price:
-                            if count < 20:
-                                floors += f"{key}: {lowest_available_price['cost']}ETH - [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\n"
+                            text = f"{key}: {lowest_available_price['cost']}ETH - [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\n"
+                            if (len(floors) + len(text)) > 1024:
+                                floors2 += text
                             else:
-                                floors2 += f"{key}: {lowest_available_price['cost']}ETH - [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\n"
+                                floors += text
                 embed.add_field(name="Floors", value=f"{floors}", inline=False)
                 embed.add_field(name="More floors", value=f"{floors2}", inline=False)
                 embed.set_footer(text="Information requested by {}".format(message.author.name))
