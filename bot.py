@@ -9,6 +9,7 @@ import io
 import random
 import time
 from PIL import Image, ImageDraw, ImageFont
+from databases import Database
 
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -27,6 +28,8 @@ class MyClient(discord.Client):
         self.founder_rand = 12403320775077705976
         self.alpha_rand   = 10566023106710594524
         self.og_rand      = 8449680988540440215
+
+        self.db_name = 'sqlite:///wen.db'
     
     async def is_valid_card(self, card_number):
         if card_number.isdigit():
@@ -435,6 +438,17 @@ class MyClient(discord.Client):
         print(self.user.name)
         print(self.user.id)
         print('------')
+        #db setup (idk if this is the best place but seems like it to me)
+        self.wen_db = Database(self.db_name)
+        await self.wen_db.connect()
+        query = """CREATE TABLE IF NOT EXISTS wens (
+                    id   INTEGER PRIMARY KEY,
+                    wen  TEXT    NOT NULL,
+                    res  TEXT    NOT NULL,
+                    UNIQUE(wen)
+                )"""
+        await self.wen_db.execute(query=query)
+        await self.wen_db.disconnect()
 
     @tasks.loop(seconds=180)
     async def update_status(self):
@@ -465,6 +479,7 @@ class MyClient(discord.Client):
             embed.add_field(name="EC Commands", value="`!summary      0-9999` Show all art and features of a card.\n`!fullart      0-9999` Show the full original art. (Videos have to be linked due to discord size limits)\n`!title        0-9999` Show the title of the artwork.\n`!artist       0-9999` Show the artist of the artwork.\n`!layerartists 0-9999` Show the artists of the individual layers.\n`!traits       0-9999` Show the traits of the card for up to 10 cards.\n`!phoenix      0-9999` Show the phoenix status of a card.\n`!layers       0-9999` Show the individual layers and occurrences.\n`!set         100-999` Show other cards in set for an alpha.\n`!traitinfo      name` Show details about a trait.\n`!stats              ` Show a range of useful statistics about EC.", inline=False)
             embed.add_field(name="OS Commands", value="`!lastsale      0-9999` Show the price the card last sold for on OS.\n`!currentprice  0-9999` Show the price the card is currently available for.\n`!floor` Show the floor price of each card type.\n`!traitfloors` Show the floor price for each trait type.\n`!hodlers` Show how many hodlers there currently are", inline=False)
             embed.add_field(name="Ether Cards", value="The [Ether Cards](https://ether.cards/) platform is a community-driven NFT framework. It enables creators to maximize the value of their NFT art or series by expanding the capability of NFT Marketplaces. It allows anyone to set up events, puzzles, bounties, and a dozen other different utilities for any NFT asset of their choice. [Ether Cards](https://ether.cards/) is a fully integrated ecosystem, composed of two major parts. These are the [platform](https://docs.ether.cards/faq.html#platform) and the [Ether Cards](https://ether.cards/) (membership card NFTs).", inline=False)
+            embed.add_field(name="Admin Commands", value="`!addwen wen response` Allows an admin to add a call and response for when a message starts with w(h)en.\n`!updwen wen response` Allows an admin to update the call and response for a w(h)en.\n`!delwen wen         ` Allows an admin to delete a call and response for when a message starts with w(h)en.", inline=False)
             embed.add_field(name="About", value="A discord bot created by <@145303558110183424>(0x1aD45017b09D2C36b84440cB82426dA645F8048A) for the Ether Cards server. The bot provides a range of functions useful to members regarding their ether cards. With some assisstance from <@390320089527746560> and <@302134640947232768>", inline=False)
             embed.set_footer(text="Help requested by {}".format(message.author.name))
             await message.reply(embed=embed, mention_author=True)
@@ -634,9 +649,6 @@ class MyClient(discord.Client):
             else:
                 await message.add_reaction('\N{CROSS MARK}')
                 await message.reply('Please enter a card number', mention_author=True) 
-        
-        if message.content.startswith('wen') or message.content.startswith('Wen'):
-            await message.reply('24-48hrs™️', mention_author=False)
 
         if message.content.startswith('!fullart'):
             args = message.content.split(' ')
@@ -829,6 +841,82 @@ class MyClient(discord.Client):
                 embed.set_footer(text="Information requested by {}".format(message.author.name))
                 await message.reply(embed=embed, mention_author=True)
         
+        if message.content.lower().startswith('wen') or message.content.lower().startswith('when'):
+            await self.wen_db.connect()
+            query = "SELECT wen,res FROM wens"
+            rows = await self.wen_db.fetch_all(query=query)
+            await self.wen_db.disconnect()
+            for word in rows:
+                if word[0] in message.content.lower():
+                    await message.reply(word[1], mention_author=True)
+
+        if message.content.startswith('!addwen'):
+            if discord.utils.get(message.author.roles, name="admin"):
+                args = message.content.split(' ')
+                args.pop(0)
+                if len(args) >= 2:
+                    await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                    wen = args.pop(0)
+                    res = ' '.join(args)
+                    await self.wen_db.connect()
+                    query = "INSERT OR IGNORE INTO wens(wen, res) VALUES (:wen, :res)"
+                    values = {"wen": wen.lower(), "res": res}
+                    response = await self.wen_db.execute(query=query, values=values)
+                    await self.wen_db.disconnect()
+                    if response != 0:
+                        await message.reply('Wen successfully added', mention_author=True)
+                    else:
+                        await message.reply('Wen already exists. Try !updwen or !delwen', mention_author=True)
+                else:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    await message.reply('Please enter a wen and a response', mention_author=True)
+
+        if message.content.startswith('!updwen'):
+            if discord.utils.get(message.author.roles, name="admin"):
+                args = message.content.split(' ')
+                args.pop(0)
+                print(len(args))
+                if len(args) >= 2:
+                    await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                    wen = args.pop(0)
+                    res = ' '.join(args)
+                    await self.wen_db.connect()
+                    query = "UPDATE wens SET res = :res WHERE wen = :wen"
+                    values = {"wen": wen.lower(), "res": res}
+                    response = await self.wen_db.execute(query=query, values=values)
+                    await self.wen_db.disconnect()
+                    if response != 0:
+                        await message.reply('Wen successfully updated', mention_author=True)
+                    else:
+                        await message.reply('Wen doesn\'t exist. Try !addwen', mention_author=True)
+                else:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    await message.reply('Please enter a wen and a response', mention_author=True)
+
+        if message.content.startswith('!delwen'):
+            if discord.utils.get(message.author.roles, name="admin"):
+                args = message.content.split(' ')
+                args.pop(0)
+                arg_len = len(args)
+                if arg_len == 1:
+                    await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+                    wen = args[0]
+                    await self.wen_db.connect()
+                    query = "DELETE FROM wens WHERE wen = :wen"
+                    values = {"wen": wen.lower()}
+                    response = await self.wen_db.execute(query=query, values=values)
+                    await self.wen_db.disconnect()
+                    if response != 0:
+                        await message.reply('Wen successfully deleted', mention_author=True)
+                    else:
+                        await message.reply('Wen doesn\'t exist. Try !addwen', mention_author=True)
+                elif arg_len > 1:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    await message.reply('Please enter one argument', mention_author=True)
+                else:
+                    await message.add_reaction('\N{CROSS MARK}')
+                    await message.reply('Please enter a wen', mention_author=True)
+
 if __name__ == "__main__":
     client = MyClient()
     client.run(os.environ['token'])
