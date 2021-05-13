@@ -161,7 +161,10 @@ class MyClient(discord.Client):
                 double_width = False
 
             if double_width:
-                bg_img = Image.new('RGB', (1920, 1080), color = bg_color)
+                if card_type != "creator":
+                    bg_img = Image.new('RGB', (2399, 1080), color = bg_color)
+                else:
+                    bg_img = Image.new('RGB', (1920, 1080), color = bg_color)
                 img_w, img_h = bg_img.size
                 async with session.get(image_url) as resp:
                     buffer = io.BytesIO(await resp.read())
@@ -174,7 +177,10 @@ class MyClient(discord.Client):
                 w, h = d.textsize(text, font=font)
                 d.multiline_text(((img_w-w)/2+35, 900 + 145-h), text, font=font, fill=txt_fill, align='center')
             else: 
-                bg_img = Image.new('RGB', (1217, 1080), color = bg_color)
+                if card_type != "creator":
+                    bg_img = Image.new('RGB', (1696, 1080), color = bg_color)
+                else:
+                    bg_img = Image.new('RGB', (1217, 1080), color = bg_color)
 
             async with session.get(layer_url) as resp:
                 buffer = io.BytesIO(await resp.read())
@@ -201,9 +207,9 @@ class MyClient(discord.Client):
             last_price = await self.get_last_sale(card_number)
             current_price = await self.get_current_price(card_number)
             if last_price != False:
-                text +="\n\nLast sold for: {}ETH".format(last_price[0])
+                text +="\n\nLast sold for: {}ETH".format(round(last_price[0], 2))
             if current_price != False:
-                text +="\n\nCurrent price: {}ETH".format(current_price)
+                text +="\n\nCurrent price: {}ETH".format(round(current_price, 2))
             if card_type == 'alpha':
                 dupes = await self.get_unique_alpha_status(card_number)
                 if dupes != 'None':
@@ -220,6 +226,31 @@ class MyClient(discord.Client):
                 d.multiline_text((1663 - w/2, 1080/2 - h/2), text, font=font, fill=txt_fill, align='center')
             else:
                 d.multiline_text((960 - w/2, 1080/2 - h/2), text, font=font, fill=txt_fill, align='center')
+
+            if card_type != "creator":
+                trait_font = ImageFont.truetype('./Poppins-Regular.ttf', 36)
+                traits_dict = {}
+                traits = await self.get_card_data(card_number, 'traits')
+                if len(traits) != 0:
+                    for item in traits:
+                        if item['name'] not in traits_dict:
+                            traits_dict.update({item['name']: 1})
+                        else:
+                            traits_dict[item['name']] += 1
+                else:
+                    traits_dict = "None"        
+                
+                traits = "Traits: \n\n"
+                for trait in traits_dict:
+                    if traits_dict[trait] != 1:
+                        traits += f"{trait} x {traits_dict[trait]}\n"
+                    else:
+                        traits += f"{trait}\n"
+                w, h = d.textsize(traits, font=font)
+                if double_width:
+                    d.multiline_text((2142 - w/2, 1080/2 - h/2), traits, font=trait_font, fill=txt_fill, align='center')
+                else:
+                    d.multiline_text((1439 - w/2, 1080/2 - h/2), traits, font=trait_font, fill=txt_fill, align='center')            
 
             bg_img.save('./CardSummary.jpg')
             return './CardSummary.jpg'
