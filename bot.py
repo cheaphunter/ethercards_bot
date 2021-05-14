@@ -506,7 +506,7 @@ class MyClient(discord.Client):
     async def before_update_status(self):
         await self.wait_until_ready()
 
-    @tasks.loop(seconds=300)
+    @tasks.loop(seconds=30)
     async def opensea_activity(self):
         url = "https://api.opensea.io/api/v1/events"
         timestamp = time.time() - 30
