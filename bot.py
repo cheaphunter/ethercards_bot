@@ -509,7 +509,7 @@ class MyClient(discord.Client):
     @tasks.loop(seconds=300)
     async def opensea_activity(self):
         url = "https://api.opensea.io/api/v1/events"
-        timestamp = time.time() - 30030
+        timestamp = time.time() - 30
         params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","only_opensea":"false","offset":"0","limit":"10000","occurred_after": timestamp}
         headers = {"X-API-KEY": os.environ['oskey']}
         async with aiohttp.ClientSession() as session:
