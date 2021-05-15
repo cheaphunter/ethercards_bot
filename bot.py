@@ -569,7 +569,6 @@ class MyClient(discord.Client):
                                 date = datetime.datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
                                 embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
                                 channel = client.get_channel(842492651395481640)
-                                channel = client.get_channel(835869401508216895)
                                 await channel.send(file=file, embed=embed)
                                 media = api.media_upload("CardSummary.jpg")
                                 api.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
