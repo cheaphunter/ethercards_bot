@@ -33,6 +33,8 @@ class MyClient(discord.Client):
         self.consumer_secret = os.environ['consumer_secret']
         self.access_token = os.environ['access_token']
         self.access_token_secret = os.environ['access_token_secret']
+
+        self.last_ran_activity_logger = time.time()
     
     async def is_valid_card(self, card_number):
         if card_number.isdigit():
@@ -310,9 +312,9 @@ class MyClient(discord.Client):
                                   params=params,
                                   headers=headers) as res:
                 data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
+                if len(data['orders']) != 0:
+                    if data['orders'][0]['closing_date'] == None:
+                        wei = data['orders'][0]['base_price']
                         return int(wei)/10**18
         return False
 
@@ -509,7 +511,8 @@ class MyClient(discord.Client):
     @tasks.loop(seconds=30)
     async def opensea_activity(self):
         url = "https://api.opensea.io/api/v1/events"
-        timestamp = time.time() - 30
+        timestamp = time.time() - (time.time() - self.last_ran_activity_logger)
+        self.last_ran_activity_logger = time.time()
         params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","only_opensea":"false","offset":"0","limit":"10000","occurred_after": timestamp}
         headers = {"X-API-KEY": os.environ['oskey']}
         async with aiohttp.ClientSession() as session:
@@ -553,7 +556,6 @@ class MyClient(discord.Client):
                                         bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})({event['from_account']['user']['username']})"
                                     else:
                                         bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})"
-
                                 card_type = await self.get_card_type(id)
                                 image = await self.create_summary(id, card_type, False)
                                 file = discord.File(image, filename="CardSummary.jpg")
@@ -619,7 +621,7 @@ class MyClient(discord.Client):
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(embed=embed)
                                 api.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
-    
+
     @opensea_activity.before_loop
     async def before_opensea_activity(self):
         await self.wait_until_ready()
