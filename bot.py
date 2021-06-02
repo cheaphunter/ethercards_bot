@@ -7,7 +7,7 @@ import asyncio
 import io
 import random
 import time
-import datetime
+from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 from databases import Database
 import tweepy
@@ -34,8 +34,8 @@ class MyClient(discord.Client):
         self.consumer_secret = os.environ['consumer_secret']
         self.access_token = os.environ['access_token']
         self.access_token_secret = os.environ['access_token_secret']
-
-        self.last_ran_activity_logger = time.time()
+        
+        self.logger_first_run = True
     
     async def is_valid_card(self, card_number):
         if card_number.isdigit():
@@ -513,13 +513,17 @@ class MyClient(discord.Client):
     async def opensea_activity(self):
         url = "https://api.opensea.io/api/v1/events"
         async with aiohttp.ClientSession() as session:
-            timestamp = time.time() - (time.time() - self.last_ran_activity_logger)
             headers = {"X-API-KEY": os.environ['oskey']}
+            if self.logger_first_run:
+                self.logger_first_ran_at = datetime.now() - timedelta(seconds=30) 
+                self.logger_first_run = False
+            else:
+                self.logger_first_ran_at += timedelta(seconds=30)
+            timestamp = datetime.timestamp(self.logger_first_ran_at)
             params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","only_opensea":"false","offset":"0","limit":"10000","occurred_after": timestamp}
             async with session.get(url,
                                     params=params,
                                     headers=headers) as res:
-                self.last_ran_activity_logger = time.time()
                 data = await res.json()
                 for event in reversed(data['asset_events']):
                     if event['event_type'] in ['created', 'successful', 'bid_entered']:
@@ -569,7 +573,7 @@ class MyClient(discord.Client):
                                 if bidder != None:
                                     embed.add_field(name="Bidder", value=bidder, inline=True)
                                 embed.set_image(url="attachment://CardSummary.jpg")
-                                date = datetime.datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
+                                date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
                                 embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(file=file, embed=embed)
@@ -615,7 +619,7 @@ class MyClient(discord.Client):
                                     card_type = await self.get_card_type(asset['token_id'])
                                     items += f"[{asset['token_id']}]({asset['permalink']}) - {card_type.capitalize()}\n"
                                 embed.add_field(name=f"Name: {event['asset_bundle']['slug']}", value=items)
-                                date = datetime.datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
+                                date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
                                 embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(embed=embed)
