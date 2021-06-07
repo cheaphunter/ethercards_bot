@@ -509,121 +509,124 @@ class MyClient(discord.Client):
     async def before_update_status(self):
         await self.wait_until_ready()
 
-    @tasks.loop(seconds=30)
+    @tasks.loop(seconds=60)
     async def opensea_activity(self):
         url = "https://api.opensea.io/api/v1/events"
         async with aiohttp.ClientSession() as session:
             headers = {"X-API-KEY": os.environ['oskey']}
             if self.logger_first_run:
-                self.logger_first_ran_at = datetime.now() - timedelta(seconds=30) 
+                self.logger_first_ran_at = datetime.now().replace(microsecond=0, second=0) - timedelta(minutes=1) 
                 self.logger_first_run = False
             else:
-                self.logger_first_ran_at += timedelta(seconds=30)
+                self.logger_first_ran_at += timedelta(minutes=1)
             timestamp = datetime.timestamp(self.logger_first_ran_at)
-            params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","only_opensea":"false","offset":"0","limit":"10000","occurred_after": timestamp}
+            params = {"collection_slug":"ether-cards-founder","only_opensea":"false","offset":"0","limit":"10000","occurred_after": timestamp}
             async with session.get(url,
                                     params=params,
                                     headers=headers) as res:
-                data = await res.json()
-                for event in reversed(data['asset_events']):
-                    if event['event_type'] in ['created', 'successful', 'bid_entered']:
-                        if event['auction_type'] == None or event['auction_type'] == 'dutch':
-                            buyer = None
-                            seller = None
-                            bidder = None
-                            auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
-                            auth.set_access_token(self.access_token, self.access_token_secret)
-                            api = tweepy.API(auth)
-                            if event['asset_bundle'] == None:
-                                id = event['asset']['token_id']
-                                if event['event_type'] == "created":
-                                    price_in_eth = int(event['starting_price'])/10**18
-                                    title = f"EC {id} listed for sale for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
-                                    else:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
-                                elif event['event_type'] == "successful":
-                                    price_in_eth = int(event['total_price'])/10**18
-                                    title = f"EC {id} just sold for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
-                                    else:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
-                                    if event['winner_account']['user']['username'] != None:
-                                        buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
-                                    else:
-                                        buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
-                                elif event['event_type'] == "bid_entered":
-                                    price_in_eth = int(event['bid_amount'])/10**18
-                                    title = f"EC {id} received a bid for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['from_account']['user']['username'] != None:
-                                        bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})({event['from_account']['user']['username']})"
-                                    else:
-                                        bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})"
-                                card_type = await self.get_card_type(id)
-                                image = await self.create_summary(id, card_type, False)
-                                file = discord.File(image, filename="CardSummary.jpg")
-                                embed=discord.Embed(title=title, color=0xbe1fda)
-                                embed.add_field(name=f"{id}", value=f"[OpenSea]({event['asset']['permalink']})\n[Explorer]({event['asset']['external_link']})", inline=True)
-                                if seller != None:
-                                    embed.add_field(name="Seller", value=seller, inline=True)
-                                if buyer != None:
-                                    embed.add_field(name="Buyer", value=buyer, inline=True)
-                                if bidder != None:
-                                    embed.add_field(name="Bidder", value=bidder, inline=True)
-                                embed.set_image(url="attachment://CardSummary.jpg")
-                                date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
-                                embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
-                                channel = client.get_channel(842492651395481640)
-                                await channel.send(file=file, embed=embed)
-                                media = api.media_upload("CardSummary.jpg")
-                                api.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
-                            else:
-                                if event['event_type'] == "created":
-                                    price_in_eth = int(event['starting_price'])/10**18
-                                    title = f"A bundle with {event['quantity']} items was listed for sale for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
-                                    else:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
-                                elif event['event_type'] == "successful":
-                                    price_in_eth = int(event['total_price'])/10**18
-                                    title = f"A bundle with {event['quantity']} items just sold for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
-                                    else:
-                                        seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
-                                    if event['winner_account']['user']['username'] != None:
-                                        buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
-                                    else:
-                                        buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
-                                elif event['event_type'] == "bid_entered":
-                                    price_in_eth = int(event['bid_amount'])/10**18
-                                    title = f"A bundle with {event['quantity']} items received a bid for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['from_account']['user']['username'] != None:
-                                        bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})({event['from_account']['user']['username']})"
-                                    else:
-                                        bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})"
+                if res.status == 200:
+                    data = await res.json()
+                    for event in reversed(data['asset_events']):
+                        if event['event_type'] in ['created', 'successful', 'bid_entered']:
+                            if event['auction_type'] == None or event['auction_type'] == 'dutch':
+                                buyer = None
+                                seller = None
+                                bidder = None
+                                auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret)
+                                auth.set_access_token(self.access_token, self.access_token_secret)
+                                api = tweepy.API(auth)
+                                if event['asset_bundle'] == None:
+                                    id = event['asset']['token_id']
+                                    if event['event_type'] == "created":
+                                        price_in_eth = int(event['starting_price'])/10**18
+                                        title = f"EC {id} listed for sale for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                        if event['seller']['user']['username'] != None:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
+                                        else:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
+                                    elif event['event_type'] == "successful":
+                                        price_in_eth = int(event['total_price'])/10**18
+                                        title = f"EC {id} just sold for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                        if event['seller']['user']['username'] != None:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
+                                        else:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
+                                        if event['winner_account']['user']['username'] != None:
+                                            buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
+                                        else:
+                                            buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
+                                    elif event['event_type'] == "bid_entered":
+                                        price_in_eth = int(event['bid_amount'])/10**18
+                                        title = f"EC {id} received a bid for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                        if event['from_account']['user']['username'] != None:
+                                            bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})({event['from_account']['user']['username']})"
+                                        else:
+                                            bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})"
+                                    card_type = await self.get_card_type(id)
+                                    image = await self.create_summary(id, card_type, False)
+                                    file = discord.File(image, filename="CardSummary.jpg")
+                                    embed=discord.Embed(title=title, color=0xbe1fda)
+                                    embed.add_field(name=f"{id}", value=f"[OpenSea]({event['asset']['permalink']})\n[Explorer]({event['asset']['external_link']})", inline=True)
+                                    if seller != None:
+                                        embed.add_field(name="Seller", value=seller, inline=True)
+                                    if buyer != None:
+                                        embed.add_field(name="Buyer", value=buyer, inline=True)
+                                    if bidder != None:
+                                        embed.add_field(name="Bidder", value=bidder, inline=True)
+                                    embed.set_image(url="attachment://CardSummary.jpg")
+                                    date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
+                                    embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
+                                    channel = client.get_channel(842492651395481640)
+                                    await channel.send(file=file, embed=embed)
+                                    media = api.media_upload("CardSummary.jpg")
+                                    api.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
+                                else:
+                                    if event['event_type'] == "created":
+                                        price_in_eth = int(event['starting_price'])/10**18
+                                        title = f"A bundle with {event['quantity']} items was listed for sale for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                        if event['seller']['user']['username'] != None:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
+                                        else:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
+                                    elif event['event_type'] == "successful":
+                                        price_in_eth = int(event['total_price'])/10**18
+                                        title = f"A bundle with {event['quantity']} items just sold for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                        if event['seller']['user']['username'] != None:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
+                                        else:
+                                            seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
+                                        if event['winner_account']['user']['username'] != None:
+                                            buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
+                                        else:
+                                            buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
+                                    elif event['event_type'] == "bid_entered":
+                                        price_in_eth = int(event['bid_amount'])/10**18
+                                        title = f"A bundle with {event['quantity']} items received a bid for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                        if event['from_account']['user']['username'] != None:
+                                            bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})({event['from_account']['user']['username']})"
+                                        else:
+                                            bidder = f"[{event['from_account']['address'][:8]}](https://opensea.io/accounts/{event['from_account']['address']})"
 
-                                embed=discord.Embed(title=title, color=0xbe1fda)
-                                embed.add_field(name="Bundle", value=f"[OpenSea]({event['asset_bundle']['permalink']})", inline=True)
-                                if seller != None:
-                                    embed.add_field(name="Seller", value=seller, inline=True)
-                                if buyer != None:
-                                    embed.add_field(name="Buyer", value=buyer, inline=True)
-                                if bidder != None:
-                                    embed.add_field(name="Bidder", value=bidder, inline=True)
-                                items = ""
-                                for asset in event['asset_bundle']['assets']:
-                                    card_type = await self.get_card_type(asset['token_id'])
-                                    items += f"[{asset['token_id']}]({asset['permalink']}) - {card_type.capitalize()}\n"
-                                embed.add_field(name=f"Name: {event['asset_bundle']['slug']}", value=items)
-                                date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
-                                embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
-                                channel = client.get_channel(842492651395481640)
-                                await channel.send(embed=embed)
-                                api.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
+                                    embed=discord.Embed(title=title, color=0xbe1fda)
+                                    embed.add_field(name="Bundle", value=f"[OpenSea]({event['asset_bundle']['permalink']})", inline=True)
+                                    if seller != None:
+                                        embed.add_field(name="Seller", value=seller, inline=True)
+                                    if buyer != None:
+                                        embed.add_field(name="Buyer", value=buyer, inline=True)
+                                    if bidder != None:
+                                        embed.add_field(name="Bidder", value=bidder, inline=True)
+                                    items = ""
+                                    for asset in event['asset_bundle']['assets']:
+                                        card_type = await self.get_card_type(asset['token_id'])
+                                        items += f"[{asset['token_id']}]({asset['permalink']}) - {card_type.capitalize()}\n"
+                                    embed.add_field(name=f"Name: {event['asset_bundle']['slug']}", value=items)
+                                    date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
+                                    embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
+                                    channel = client.get_channel(842492651395481640)
+                                    await channel.send(embed=embed)
+                                    api.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
+                else:
+                    print(res)
 
     @opensea_activity.before_loop
     async def before_opensea_activity(self):
@@ -983,21 +986,23 @@ class MyClient(discord.Client):
                 embed=discord.Embed(title="Trait floors", color=0xbe1fda)
                 floors = ""#have to do this because 1024 embed field limit even though it's all hyperlinks
                 floors2 = ""
-                count = 0
-                table = """```
-                ```"""
+                floors3 = ""
                 for key in data:
-                    count += 1
                     if "card_ids" in data[key]:
                         lowest_available_price = await self.get_trait_floor(data[key]['card_ids'])
                         if lowest_available_price:
                             text = f"{key}: {lowest_available_price['cost']}ETH - [{lowest_available_price['id']}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{lowest_available_price['id']})\n"
-                            if (len(floors) + len(text)) > 1024:
+                            if (len(floors) + len(text)) < 1024:
+                                floors += text
+                            elif (len(floors2) + len(text)) < 1024:
                                 floors2 += text
                             else:
-                                floors += text
+                                floors3 += text
                 embed.add_field(name="Floors", value=f"{floors}", inline=False)
-                embed.add_field(name="More floors", value=f"{floors2}", inline=False)
+                if floors2 != "":
+                    embed.add_field(name="More floors", value=f"{floors2}", inline=False)
+                if floors3 != "":
+                    embed.add_field(name="Even More floors", value=f"{floors3}", inline=False)
                 embed.set_footer(text="Information requested by {}".format(message.author.name))
                 await message.reply(embed=embed, mention_author=True)
         
