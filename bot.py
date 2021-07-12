@@ -451,7 +451,7 @@ class MyClient(discord.Client):
                 traits = [{"name": "series", "values": [series]}]
                 floor = await self.get_floor(traits)
                 data.update({series: {'cost': floor['cost'], 'id': floor['id']}})
-                asyncio.sleep(0.1)
+                await asyncio.sleep(0.1)
         return data
         
     async def on_ready(self):
