@@ -451,6 +451,7 @@ class MyClient(discord.Client):
                 traits = [{"name": "series", "values": [series]}]
                 floor = await self.get_floor(traits)
                 data.update({series: {'cost': floor['cost'], 'id': floor['id']}})
+                asyncio.sleep(0.1)
         return data
         
     async def on_ready(self):
@@ -845,7 +846,7 @@ class MyClient(discord.Client):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             floor = await self.floor_update()
             embed=discord.Embed(title="OpenSea floors", color=0xbe1fda)
-            embed.add_field(name="Floors:", value=f'`Founder: `ID: [{floor["Founder"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["Founder"]["id"]}) - {floor["Founder"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Founder)\n`Alpha:   `ID: [{floor["Alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["Alpha"]["id"]}) - {floor["Alpha"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Alpha)\n`OG:      `ID: [{floor["OG"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["OG"]["id"]}) - {floor["OG"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=OG)', inline=False)
+            embed.add_field(name="Floors:", value=f'`Founder: `ID: [{floor["Founder"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["Founder"]["id"]}) - {floor["Founder"]["cost"]}ETH - [Browse](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Founder&search[toggles][0]=BUY_NOW)\n`Alpha:   `ID: [{floor["Alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["Alpha"]["id"]}) - {floor["Alpha"]["cost"]}ETH - [Browse](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Alpha)\n`OG:      `ID: [{floor["OG"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["OG"]["id"]}) - {floor["OG"]["cost"]}ETH - [Browse](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=OG)', inline=False)
             await message.reply(embed=embed, mention_author=True)
 
         if message.content.startswith('!vol'):
