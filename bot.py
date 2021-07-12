@@ -392,85 +392,67 @@ class MyClient(discord.Client):
                                 return lowest_price
         return False
     
-    async def floor_update(self):
-        floor = {}
-        url = "https://api.opensea.io/wyvern/v1/orders"
-        #founder_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-        og_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100'],"side":"1","sale_kind":"0","limit":"15","offset":"0","order_by":"eth_price","order_direction":"asc"}
-        headers = {"X-API-KEY": os.environ['oskey']}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url,
-                                  params=og_params,
-                                  headers=headers) as res:
-                data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
-                        floor.update({'og': {'cost': int(wei)/10**18, 'id': i['asset']['token_id']}})
-                        break
-            #alphas require 4 queries 
-            list_for_token_ids = []
-            lowest = []
-            for i in range(100, 375):
-                list_for_token_ids.append(str(i))
-            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            async with session.get(url,
-                                  params=alpha_params,
-                                  headers=headers) as res:
-                data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
-                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
-            
-            list_for_token_ids = []
-            for i in range(375, 650):
-                list_for_token_ids.append(str(i))
-            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            async with session.get(url,
-                                  params=alpha_params,
-                                  headers=headers) as res:
-                data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
-                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
-            await asyncio.sleep(1)
-            list_for_token_ids = []
-            for i in range(650, 900):
-                list_for_token_ids.append(str(i))
-            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            async with session.get(url,
-                                  params=alpha_params,
-                                  headers=headers) as res:
-                data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
-                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
+    async def get_floor(self, traits):
+        floor_query = {
+            "id":"AssetSearchQuery",
+            "query":"query AssetSearchQuery(\n  $categories: [CollectionSlug!]\n  $chains: [ChainScalar!]\n  $collection: CollectionSlug\n  $collectionQuery: String\n  $collectionSortBy: CollectionSort\n  $collections: [CollectionSlug!]\n  $count: Int\n  $cursor: String\n  $identity: IdentityInputType\n  $includeHiddenCollections: Boolean\n  $numericTraits: [TraitRangeType!]\n  $paymentAssets: [PaymentAssetSymbol!]\n  $priceFilter: PriceFilterType\n  $query: String\n  $resultModel: SearchResultModel\n  $showContextMenu: Boolean = false\n  $shouldShowQuantity: Boolean = false\n  $sortAscending: Boolean\n  $sortBy: SearchSortBy\n  $stringTraits: [TraitInputType!]\n  $toggles: [SearchToggle!]\n  $creator: IdentityInputType\n  $assetOwner: IdentityInputType\n  $isPrivate: Boolean\n  $safelistRequestStatuses: [SafelistRequestStatus!]\n) {\n  query {\n    ...AssetSearch_data_2hBjZ1\n  }\n}\n\nfragment AssetCardContent_assetBundle on AssetBundleType {\n  assetQuantities(first: 18) {\n    edges {\n      node {\n        asset {\n          relayId\n          ...AssetMedia_asset\n          id\n        }\n        id\n      }\n    }\n  }\n}\n\nfragment AssetCardContent_asset_27d9G3 on AssetType {\n  relayId\n  name\n  ...AssetMedia_asset\n  assetContract {\n    account {\n      address\n      chain {\n        identifier\n        id\n      }\n      id\n    }\n    openseaVersion\n    id\n  }\n  tokenId\n  collection {\n    slug\n    id\n  }\n  isDelisted\n  ...AssetContextMenu_data_3z4lq0 @include(if: $showContextMenu)\n}\n\nfragment AssetCardFooter_assetBundle on AssetBundleType {\n  name\n  assetQuantities(first: 18) {\n    edges {\n      node {\n        asset {\n          collection {\n            name\n            relayId\n            id\n          }\n          id\n        }\n        id\n      }\n    }\n  }\n  assetEventData {\n    lastSale {\n      unitPriceQuantity {\n        ...AssetQuantity_data\n        id\n      }\n    }\n  }\n  orderData {\n    bestBid {\n      orderType\n      paymentAssetQuantity {\n        ...AssetQuantity_data\n        id\n      }\n    }\n    bestAsk {\n      closedAt\n      orderType\n      dutchAuctionFinalPrice\n      openedAt\n      priceFnEndedAt\n      quantity\n      decimals\n      paymentAssetQuantity {\n        quantity\n        ...AssetQuantity_data\n        id\n      }\n    }\n  }\n}\n\nfragment AssetCardFooter_asset_fdERL on AssetType {\n  ownedQuantity(identity: $identity) @include(if: $shouldShowQuantity)\n  name\n  tokenId\n  collection {\n    name\n    id\n  }\n  hasUnlockableContent\n  isDelisted\n  assetContract {\n    account {\n      address\n      chain {\n        identifier\n        id\n      }\n      id\n    }\n    openseaVersion\n    id\n  }\n  assetEventData {\n    firstTransfer {\n      timestamp\n    }\n    lastSale {\n      unitPriceQuantity {\n        ...AssetQuantity_data\n        id\n      }\n    }\n  }\n  decimals\n  orderData {\n    bestBid {\n      orderType\n      paymentAssetQuantity {\n        ...AssetQuantity_data\n        id\n      }\n    }\n    bestAsk {\n      closedAt\n      orderType\n      dutchAuctionFinalPrice\n      openedAt\n      priceFnEndedAt\n      quantity\n      decimals\n      paymentAssetQuantity {\n        quantity\n        ...AssetQuantity_data\n        id\n      }\n    }\n  }\n}\n\nfragment AssetCardHeader_data on AssetType {\n  relayId\n  favoritesCount\n  isDelisted\n  isFavorite\n}\n\nfragment AssetContextMenu_data_3z4lq0 on AssetType {\n  ...asset_edit_url\n  ...itemEvents_data\n  isDelisted\n  isEditable {\n    value\n    reason\n  }\n  isListable\n  ownership(identity: {}) {\n    isPrivate\n    quantity\n  }\n  creator {\n    address\n    id\n  }\n  collection {\n    isAuthorizedEditor\n    id\n  }\n}\n\nfragment AssetMedia_asset on AssetType {\n  animationUrl\n  backgroundColor\n  collection {\n    description\n    displayData {\n      cardDisplayStyle\n    }\n    imageUrl\n    hidden\n    name\n    slug\n    id\n  }\n  description\n  name\n  tokenId\n  imageUrl\n  isDelisted\n}\n\nfragment AssetQuantity_data on AssetQuantityType {\n  asset {\n    ...Price_data\n    id\n  }\n  quantity\n}\n\nfragment AssetSearchFilter_data_3KTzFc on Query {\n  ...CollectionFilter_data_2qccfC\n  collection(collection: $collection) {\n    numericTraits {\n      key\n      value {\n        max\n        min\n      }\n      ...NumericTraitFilter_data\n    }\n    stringTraits {\n      key\n      ...StringTraitFilter_data\n    }\n    id\n  }\n  ...PaymentFilter_data_2YoIWt\n  ...CategoryFilter_data\n}\n\nfragment AssetSearchList_data_3Aax2O on SearchResultType {\n  asset {\n    assetContract {\n      account {\n        address\n        chain {\n          identifier\n          id\n        }\n        id\n      }\n      id\n    }\n    relayId\n    tokenId\n    ...AssetSelectionItem_data\n    ...asset_url\n    id\n  }\n  assetBundle {\n    relayId\n    id\n  }\n  ...Asset_data_3Aax2O\n}\n\nfragment AssetSearch_data_2hBjZ1 on Query {\n  ...CollectionHeadMetadata_data_2YoIWt\n  ...AssetSearchFilter_data_3KTzFc\n  ...SearchPills_data_2Kg4Sq\n  search(after: $cursor, chains: $chains, categories: $categories, collections: $collections, first: $count, identity: $identity, numericTraits: $numericTraits, paymentAssets: $paymentAssets, priceFilter: $priceFilter, querystring: $query, resultType: $resultModel, sortAscending: $sortAscending, sortBy: $sortBy, stringTraits: $stringTraits, toggles: $toggles, creator: $creator, isPrivate: $isPrivate, safelistRequestStatuses: $safelistRequestStatuses) {\n    edges {\n      node {\n        ...AssetSearchList_data_3Aax2O\n        __typename\n      }\n      cursor\n    }\n    totalCount\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment AssetSelectionItem_data on AssetType {\n  backgroundColor\n  collection {\n    displayData {\n      cardDisplayStyle\n    }\n    imageUrl\n    id\n  }\n  imageUrl\n  name\n  relayId\n}\n\nfragment Asset_data_3Aax2O on SearchResultType {\n  asset {\n    assetContract {\n      account {\n        chain {\n          identifier\n          id\n        }\n        id\n      }\n      id\n    }\n    isDelisted\n    ...AssetCardHeader_data\n    ...AssetCardContent_asset_27d9G3\n    ...AssetCardFooter_asset_fdERL\n    ...AssetMedia_asset\n    ...asset_url\n    ...itemEvents_data\n    id\n  }\n  assetBundle {\n    slug\n    assetCount\n    ...AssetCardContent_assetBundle\n    ...AssetCardFooter_assetBundle\n    id\n  }\n}\n\nfragment CategoryFilter_data on Query {\n  categories {\n    imageUrl\n    name\n    slug\n  }\n}\n\nfragment CollectionFilter_data_2qccfC on Query {\n  selectedCollections: collections(first: 25, collections: $collections, includeHidden: true) {\n    edges {\n      node {\n        assetCount\n        imageUrl\n        name\n        slug\n        id\n      }\n    }\n  }\n  collections(assetOwner: $assetOwner, assetCreator: $creator, onlyPrivateAssets: $isPrivate, chains: $chains, first: 100, includeHidden: $includeHiddenCollections, parents: $categories, query: $collectionQuery, sortBy: $collectionSortBy) {\n    edges {\n      node {\n        assetCount\n        imageUrl\n        name\n        slug\n        id\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment CollectionHeadMetadata_data_2YoIWt on Query {\n  collection(collection: $collection) {\n    bannerImageUrl\n    description\n    imageUrl\n    name\n    id\n  }\n}\n\nfragment CollectionModalContent_data on CollectionType {\n  description\n  imageUrl\n  name\n  slug\n}\n\nfragment NumericTraitFilter_data on NumericTraitTypePair {\n  key\n  value {\n    max\n    min\n  }\n}\n\nfragment PaymentFilter_data_2YoIWt on Query {\n  paymentAssets(first: 10) {\n    edges {\n      node {\n        asset {\n          symbol\n          id\n        }\n        relayId\n        id\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n  PaymentFilter_collection: collection(collection: $collection) {\n    paymentAssets {\n      asset {\n        symbol\n        id\n      }\n      relayId\n      id\n    }\n    id\n  }\n}\n\nfragment Price_data on AssetType {\n  decimals\n  imageUrl\n  symbol\n  usdSpotPrice\n  assetContract {\n    blockExplorerLink\n    account {\n      chain {\n        identifier\n        id\n      }\n      id\n    }\n    id\n  }\n}\n\nfragment SearchPills_data_2Kg4Sq on Query {\n  selectedCollections: collections(first: 25, collections: $collections, includeHidden: true) {\n    edges {\n      node {\n        imageUrl\n        name\n        slug\n        ...CollectionModalContent_data\n        id\n      }\n    }\n  }\n}\n\nfragment StringTraitFilter_data on StringTraitType {\n  counts {\n    count\n    value\n  }\n  key\n}\n\nfragment asset_edit_url on AssetType {\n  assetContract {\n    account {\n      address\n      chain {\n        identifier\n        id\n      }\n      id\n    }\n    id\n  }\n  tokenId\n  collection {\n    slug\n    id\n  }\n}\n\nfragment asset_url on AssetType {\n  assetContract {\n    account {\n      address\n      chain {\n        identifier\n        id\n      }\n      id\n    }\n    id\n  }\n  tokenId\n}\n\nfragment itemEvents_data on AssetType {\n  assetContract {\n    account {\n      address\n      chain {\n        identifier\n        id\n      }\n      id\n    }\n    id\n  }\n  tokenId\n}\n",
+            "variables":{
+                "categories":None,
+                "chains":None,
+                "collection":"ether-cards-founder",
+                "collectionQuery":None,
+                "collectionSortBy":"SEVEN_DAY_VOLUME",
+                "collections":[
+                "ether-cards-founder"
+                ],
+                "count":1,
+                "cursor":None,
+                "identity":None,
+                "includeHiddenCollections":False,
+                "numericTraits":None,
+                "paymentAssets":None,
+                "priceFilter":None,
+                "query":"",
+                "resultModel":"ASSETS",
+                "showContextMenu":False,
+                "shouldShowQuantity":False,
+                "sortAscending":True,
+                "sortBy":"PRICE",
+                "stringTraits": traits,
+                "toggles":[
+                "BUY_NOW"
+                ],
+                "creator":None,
+                "assetOwner":None,
+                "isPrivate":None,
+                "safelistRequestStatuses":None
+            }
+        }
+        url = "https://api.opensea.io/graphql/"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, json=floor_query) as res:
+                    data = await res.json()
+                    floor = data['data']['query']['search']['edges'][0]['node']['asset']
+                    id = floor['tokenId']
+                    cost = int(floor['orderData']['bestAsk']['paymentAssetQuantity']['quantity']) /10**18
+            return({'cost': cost, 'id': id})
+        except Exception as e:
+            print(e)
+            return({'cost': -1, 'id': -1})
 
-            list_for_token_ids = []
-            for i in range(900, 1000):
-                list_for_token_ids.append(str(i))
-            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
-            async with session.get(url,
-                                  params=alpha_params,
-                                  headers=headers) as res:
-                data = await res.json()
-                for i in data['orders']:
-                    if i['closing_date'] == None:
-                        wei = i['base_price']
-                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
-            new_lowest = None
-            for i in lowest:
-                if new_lowest != None:
-                    if i[0] < new_lowest[0]:
-                        new_lowest = i
-                else:
-                    new_lowest = i
-            floor.update({'alpha': {'cost': new_lowest[0], 'id': new_lowest[1]}})
-        return floor
-    
+    async def floor_update(self, traits=None):
+        data = {}
+        if traits != None:
+            floor = await self.get_floor(traits)
+            data.update({traits[0]['values'][0]: {'cost': floor['cost'], 'id': floor['id']}})
+        else:
+            for series in ('OG', 'Alpha', 'Founder'):
+                traits = [{"name": "series", "values": [series]}]
+                floor = await self.get_floor(traits)
+                data.update({series: {'cost': floor['cost'], 'id': floor['id']}})
+        return data
+        
     async def on_ready(self):
         print('Logged in as')
         print(self.user.name)
@@ -492,7 +474,7 @@ class MyClient(discord.Client):
 
     @tasks.loop(seconds=180)
     async def update_status(self):
-        activities = ['holders', 'alpha', 'og', 'vol']
+        activities = ['holders', 'Alpha', 'OG', 'Founder', 'vol']
         choice = random.choice(activities)
         if choice == 'holders':
             holders = await self.get_card_holders()
@@ -501,8 +483,9 @@ class MyClient(discord.Client):
             vol = await self.get_7day_vol()
             activity = f'7 Day vol: {round(vol, 2)}ETH'
         else:
-            floor = await self.floor_update()
-            activity = f'{choice.capitalize()} floor: {floor[choice]["cost"]}ETH'
+            traits = [{"name": "series", "values": [choice]}]
+            floor = await self.floor_update(traits)
+            activity = f'{choice} floor: {floor[choice]["cost"]}ETH'
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='{}'.format(activity)))
     
     @update_status.before_loop
@@ -862,7 +845,7 @@ class MyClient(discord.Client):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             floor = await self.floor_update()
             embed=discord.Embed(title="OpenSea floors", color=0xbe1fda)
-            embed.add_field(name="Floors:", value=f'`Founder: `[OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Founder)\n`Alpha:   `ID: [{floor["alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["alpha"]["id"]}) - {floor["alpha"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Alpha)\n`OG:      `ID: [{floor["og"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["og"]["id"]}) - {floor["og"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=OG)', inline=False)
+            embed.add_field(name="Floors:", value=f'`Founder: `ID: [{floor["Founder"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["Founder"]["id"]}) - {floor["Founder"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Founder)\n`Alpha:   `ID: [{floor["Alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["Alpha"]["id"]}) - {floor["Alpha"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Alpha)\n`OG:      `ID: [{floor["OG"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["OG"]["id"]}) - {floor["OG"]["cost"]}ETH - [OS Link](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=OG)', inline=False)
             await message.reply(embed=embed, mention_author=True)
 
         if message.content.startswith('!vol'):
@@ -949,7 +932,7 @@ class MyClient(discord.Client):
             args.pop(0)
             trait = ' '.join(args)
             if trait != "":
-                with open('random_traits.json') as trait_data:
+                with open('random_traits.json', encoding="utf8") as trait_data:
                     data = json.load(trait_data)
                     new_data = list(map(str.lower, data.keys()))
                     originals = list(map(str, data.keys()))
@@ -981,7 +964,7 @@ class MyClient(discord.Client):
 
         if message.content.startswith('!traitfloors'):
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
-            with open('random_traits.json') as trait_data:
+            with open('random_traits.json', encoding="utf8") as trait_data:
                 data = json.load(trait_data)
                 embed=discord.Embed(title="Trait floors", color=0xbe1fda)
                 floors = ""#have to do this because 1024 embed field limit even though it's all hyperlinks
