@@ -276,19 +276,13 @@ class MyClient(discord.Client):
                 return res[0][-2]
 
     async def get_7day_vol(self):
-        url = "https://api.opensea.io/api/v1/events"
-        timestamp = time.time() - 604800
-        params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","event_type":"successful","only_opensea":"false","offset":"0","limit":"10000","occurred_after":timestamp}
-        headers = {"X-API-KEY": os.environ['oskey']}
+        url = f"https://api.opensea.io/api/v1/asset/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/1/?force_update=true&format=json"
+        headers = {"X-API-KEY": self.os_key}
         async with aiohttp.ClientSession() as session:
             async with session.get(url,
-                                    params=params,
                                     headers=headers) as res:
                 data = await res.json()   
-                eth_total = 0                                 
-                for row in data['asset_events']:
-                    eth_total += int(row['total_price'])/10**18
-                return eth_total
+                return data['collection']['stats']['seven_day_volume']
 
     async def get_full_art(self, card_number, card_type):
         url = 'https://heroku.ether.cards/card/{}/{}.json'.format(int(card_number) % 100, int(card_number))
