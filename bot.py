@@ -448,10 +448,10 @@ class MyClient(discord.Client):
             data.update({traits[0]['values'][0]: {'cost': floor['cost'], 'id': floor['id']}})
         else:
             for series in ('OG', 'Alpha', 'Founder'):
-                traits = [{"name": "series", "values": [series]}]
+                traits = [{"name": "type", "values": [series]}]
                 floor = await self.get_floor(traits)
                 data.update({series: {'cost': floor['cost'], 'id': floor['id']}})
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
         return data
         
     async def on_ready(self):
