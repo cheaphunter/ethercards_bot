@@ -819,7 +819,7 @@ class MyClient(discord.Client):
                     value = match[1].lower().title()
                     embed_text += f'{category}: {value}\n'
                     trait_query_list.append({"name": category, "values": value})
-                    floor = await self.get_floor(trait_query_list)
+                floor = await self.get_floor(trait_query_list)
                 if floor is None or floor['cost'] == -1:
                     await message.reply('Floor not found for trait that trait combination. Please check the filters on OpenSea for valid combinations.', mention_author=True)
                 else:
