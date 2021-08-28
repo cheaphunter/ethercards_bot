@@ -815,7 +815,7 @@ class MyClient(discord.Client):
                 floor = None
                 for match in re.findall(pattern, args):
                     await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
-                    category = match[0].lower().title()
+                    category = match[0].lower()
                     value = match[1].lower().title()
                     embed_text += f'{category}: {value}\n'
                     trait_query_list.append({"name": category, "values": value})
@@ -824,7 +824,7 @@ class MyClient(discord.Client):
                     await message.reply('Floor not found for trait that trait combination. Please check the filters on OpenSea for valid combinations.', mention_author=True)
                 else:
                     embed.add_field(name='Traits:', value=embed_text)
-                    embed.add_field(name='Floor:', value=f'ID: [{floor["id"]}](https://opensea.io/assets/{self.contract}/{floor["id"]}) - {floor["cost"]}ETH - [Browse](https://opensea.io/assets/{self.collection}?search[sortAscending]=true&search[sortBy]=PRICE&search[toggles][0]=BUY_NOW)', inline=False)
+                    embed.add_field(name='Floor:', value=f'ID: [{floor["id"]}](https://opensea.io/assets/{self.contract}/{floor["id"]}) - {floor["cost"]}ETH - [Browse](https://opensea.io/assets/{self.contract}?search[sortAscending]=true&search[sortBy]=PRICE&search[toggles][0]=BUY_NOW)', inline=False)
                     await message.reply(embed=embed, mention_author=True)     
 
         if message.content.startswith('!vol'):
