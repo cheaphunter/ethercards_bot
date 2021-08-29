@@ -515,6 +515,7 @@ class MyClient(discord.Client):
                                 await channel.send(file=file, embed=embed)
                                 media = self.tweepy.media_upload("CardSummary.jpg")
                                 self.tweepy.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
+                                self.posted_events.append(event_info)                                
                             else:
                                 if event['event_type'] == "created":
                                     price_in_eth = int(event['starting_price'])/10**18
@@ -551,7 +552,7 @@ class MyClient(discord.Client):
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(embed=embed)
                                 self.tweepy.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
-                        self.posted_events.append(event_info)
+                                self.posted_events.append(event_info)
                         if len(self.posted_events) > 50:
                             self.posted_events.pop(0)
 
