@@ -484,18 +484,18 @@ class MyClient(discord.Client):
                                 if event['event_type'] == "created":
                                     price_in_eth = int(event['starting_price'])/10**18
                                     title = f"EC {id} listed for sale for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
+                                    if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
                                 elif event['event_type'] == "successful":
                                     price_in_eth = int(event['total_price'])/10**18
                                     title = f"EC {id} just sold for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
+                                    if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
-                                    if event['winner_account']['user']['username'] != None:
+                                    if event['winner_account']['user'] != None:
                                         buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
                                     else:
                                         buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
@@ -519,18 +519,18 @@ class MyClient(discord.Client):
                                 if event['event_type'] == "created":
                                     price_in_eth = int(event['starting_price'])/10**18
                                     title = f"A bundle with {event['quantity']} items was listed for sale for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
+                                    if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
                                 elif event['event_type'] == "successful":
                                     price_in_eth = int(event['total_price'])/10**18
                                     title = f"A bundle with {event['quantity']} items just sold for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
-                                    if event['seller']['user']['username'] != None:
+                                    if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
-                                    if event['winner_account']['user']['username'] != None:
+                                    if event['winner_account']['user'] != None:
                                         buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
                                     else:
                                         buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
