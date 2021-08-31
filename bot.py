@@ -923,8 +923,8 @@ class MyClient(discord.Client):
                         embed=discord.Embed(title=f"The {original_trait_name} trait", color=0xbe1fda)
                         embed.add_field(name="Description", value=f"{data[original_trait_name]['Short description'].capitalize()}", inline=False)
                         if "card_ids" in data[original_trait_name]:
-                            lowest_available_price = await self.get_trait_floor(data[original_trait_name]['card_ids'])
-                            if lowest_available_price != False:
+                            lowest_available_price = await self.get_floor([{"name": "trait", "values": original_trait_name},])
+                            if lowest_available_price["cost"] != -1:
                                 embed.add_field(name="Statistics", value=f"Card type: {data[original_trait_name]['card type'].capitalize()}\nFloor price: {lowest_available_price['cost']}ETH ID: [{lowest_available_price['id']}](https://opensea.io/assets/{self.contract}/{lowest_available_price['id']})\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
                             else:
                                 embed.add_field(name="Statistics", value=f"Card type: {data[original_trait_name]['card type'].capitalize()}\nPercentage: {data[original_trait_name]['percentage']}", inline=False)
