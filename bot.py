@@ -473,7 +473,7 @@ class MyClient(discord.Client):
         data = await self.get_events()
         if data:
             for event in reversed(data['asset_events']):
-                event_info = {'id': event['asset']['id'], 'type': event['event_type']}
+                event_info = {'id': event['id'], 'type': event['event_type']}
                 if event['event_type'] in ['created', 'successful']:
                     if event_info not in self.posted_events:
                         if event['auction_type'] == None or event['auction_type'] == 'dutch':
@@ -535,7 +535,6 @@ class MyClient(discord.Client):
                                         buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})({event['winner_account']['user']['username']})"
                                     else:
                                         buyer = f"[{event['winner_account']['address'][:8]}](https://opensea.io/accounts/{event['winner_account']['address']})"
-
                                 embed=discord.Embed(title=title, color=0xbe1fda)
                                 embed.add_field(name="Bundle", value=f"[OpenSea]({event['asset_bundle']['permalink']})", inline=True)
                                 if seller != None:
@@ -562,7 +561,7 @@ class MyClient(discord.Client):
         if data:
             for event in reversed(data['asset_events']):
                 if event['event_type'] in ['created', 'successful']:
-                    self.posted_events.append({"id": event["asset"]["id"], "type": event["event_type"]})
+                    self.posted_events.append({"id": event["id"], "type": event["event_type"]})
         await self.wait_until_ready()
 
     async def on_message(self, message):
