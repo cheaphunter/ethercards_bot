@@ -479,18 +479,19 @@ class MyClient(discord.Client):
                         if event['auction_type'] == None or event['auction_type'] == 'dutch':
                             buyer = None
                             seller = None
+                            token = event['payment_token']['symbol']
                             if event['asset_bundle'] == None:
                                 id = event['asset']['token_id']
                                 if event['event_type'] == "created":
                                     price_in_eth = int(event['starting_price'])/10**18
-                                    title = f"EC {id} listed for sale for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                    title = f"EC {id} listed for sale for {round(price_in_eth, 4)}{token} (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
                                     if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
                                 elif event['event_type'] == "successful":
                                     price_in_eth = int(event['total_price'])/10**18
-                                    title = f"EC {id} just sold for {round(price_in_eth, 4)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                    title = f"EC {id} just sold for {round(price_in_eth, 4)}{token} (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
                                     if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
@@ -519,14 +520,14 @@ class MyClient(discord.Client):
                             else:
                                 if event['event_type'] == "created":
                                     price_in_eth = int(event['starting_price'])/10**18
-                                    title = f"A bundle with {event['quantity']} items was listed for sale for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                    title = f"A bundle with {event['quantity']} items was listed for sale for {round(price_in_eth, 2)}{token} (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
                                     if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})"
                                 elif event['event_type'] == "successful":
                                     price_in_eth = int(event['total_price'])/10**18
-                                    title = f"A bundle with {event['quantity']} items just sold for {round(price_in_eth, 2)}ETH (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
+                                    title = f"A bundle with {event['quantity']} items just sold for {round(price_in_eth, 2)}{token} (${round(price_in_eth * float(event['payment_token']['usd_price']), 2)})"
                                     if event['seller']['user'] != None:
                                         seller = f"[{event['seller']['address'][:8]}](https://opensea.io/accounts/{event['seller']['address']})({event['seller']['user']['username']})"
                                     else:
