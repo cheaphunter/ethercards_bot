@@ -515,7 +515,10 @@ class MyClient(discord.Client):
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(file=file, embed=embed)
                                 media = self.tweepy.media_upload("CardSummary.jpg")
-                                self.tweepy.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
+                                try:
+                                    self.tweepy.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
+                                except Exception as e:
+                                    print(f"failed to post tweet: {e}")
                                 self.posted_events.append(event_info)                                
                             else:
                                 if event['event_type'] == "created":
@@ -551,7 +554,10 @@ class MyClient(discord.Client):
                                 embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(embed=embed)
-                                self.tweepy.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
+                                try:
+                                    self.tweepy.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
+                                except Exception as e:
+                                    print(f"failed to post tweet: {e}")
                                 self.posted_events.append(event_info)
                         if len(self.posted_events) > 50:
                             self.posted_events.pop(0)
