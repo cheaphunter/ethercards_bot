@@ -323,10 +323,11 @@ class MyClient(discord.Client):
                                   params=params,
                                   headers=headers) as res:
                 data = await res.json()
-                if len(data['orders']) != 0:
-                    if data['orders'][0]['closing_date'] == None:
-                        wei = data['orders'][0]['base_price']
-                        return int(wei)/10**18
+                if 'orders' in data:
+                    if len(data['orders']) != 0:
+                        if data['orders'][0]['closing_date'] == None:
+                            wei = data['orders'][0]['base_price']
+                            return int(wei)/10**18
         return False
 
     async def get_last_sale(self, card_number):
