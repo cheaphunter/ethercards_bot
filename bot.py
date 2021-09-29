@@ -342,6 +342,66 @@ class MyClient(discord.Client):
                     price_in_dol = price_in_eth * float(data['last_sale']['payment_token']['usd_price'])
                     return (price_in_eth, price_in_dol)
         return False
+
+    async def get_trait_floor(self, card_list):
+        url = "https://api.opensea.io/wyvern/v1/orders"
+        headers = {"X-API-KEY": os.environ['oskey']}
+        async with aiohttp.ClientSession() as session:
+            if len(card_list) <= 500:
+                if len(card_list) > 250:
+                    card_list_1 = card_list[:len(card_list)//2]
+                    card_list_2 = card_list[len(card_list)//2:]
+                    card_list_1 = list(map(str, card_list_1))
+                    card_list_2 = list(map(str, card_list_2))
+                    lowest_price = {}
+                    params_1 = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": card_list_1,"side":"1","sale_kind":"0","limit":"50","offset":"0","order_by":"eth_price","order_direction":"asc"}
+                    async with session.get(url,
+                                            params=params_1,
+                                            headers=headers) as res:
+                        data = await res.json()
+                        for i in data['orders']:
+                            if i['closing_date'] == None:
+                                wei = i['base_price']
+                                if 'cost' not in lowest_price:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                elif int(wei)/10**18 < lowest_price['cost']:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                    params_2 = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": card_list_2,"side":"1","sale_kind":"0","limit":"50","offset":"0","order_by":"eth_price","order_direction":"asc"}
+                    async with session.get(url,
+                                            params=params_2,
+                                            headers=headers) as res:
+                        data = await res.json()
+                        for i in data['orders']:
+                            if i['closing_date'] == None:
+                                wei = i['base_price']
+                                if 'cost' not in lowest_price:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                elif int(wei)/10**18 < lowest_price['cost']:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                    return lowest_price
+                else:
+                    card_list = list(map(str, card_list))
+                    params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": card_list,"side":"1","sale_kind":"0","limit":"50","offset":"0","order_by":"eth_price","order_direction":"asc"}
+                    async with session.get(url,
+                                            params=params,
+                                            headers=headers) as res:
+                        data = await res.json()
+                        lowest_price = {}
+                        for i in data['orders']:
+                            if i['closing_date'] == None:
+                                wei = i['base_price']
+                                if 'cost' not in lowest_price:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                elif int(wei)/10**18 < lowest_price['cost']:
+                                    lowest_price['cost'] = int(wei)/10**18
+                                    lowest_price['id'] = i['asset']['token_id']
+                                return lowest_price
+        return False
     
     async def get_floor(self, traits):
         floor_query = {
@@ -395,23 +455,96 @@ class MyClient(discord.Client):
             print(e)
             return({'cost': -1, 'id': -1})
 
-    async def floor_update(self, traits=None):
-        data = {}
-        if traits != None:
-            floor = await self.get_floor(traits)
-            data.update({'cost': floor['cost'], 'id': floor['id']})
-        else:
-            for series in ('Founder', 'Alpha', 'OG'):
-                traits = [{"name": "type", "values": [series]}]
-                floor = await self.get_floor(traits)
-                data.update({series: {'cost': floor['cost'], 'id': floor['id']}})
-                await asyncio.sleep(1)
-        return data
+    async def floor_update(self):
+        floor = {}
+        url = "https://api.opensea.io/wyvern/v1/orders"
+        founder_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
+        og_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100'],"side":"1","sale_kind":"0","limit":"15","offset":"0","order_by":"eth_price","order_direction":"asc"}
+        headers = {"X-API-KEY": os.environ['oskey']}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://api.opensea.io/api/v1/asset/{self.contract}/0/",
+                                  headers=headers) as res:
+                try:
+                    data = await res.json()
+                    floor.update({'founder': {'cost': data['collection']['stats']['floor_price']}})
+                except Exception as e:
+                    print(f"failed to get founder floor: {e}")
+            async with session.get(url,
+                                  params=og_params,
+                                  headers=headers) as res:
+                data = await res.json()
+                for i in data['orders']:
+                    if i['closing_date'] == None:
+                        wei = i['base_price']
+                        floor.update({'og': {'cost': int(wei)/10**18, 'id': i['asset']['token_id']}})
+                        break
+            #alphas require 4 queries 
+            list_for_token_ids = []
+            lowest = []
+            for i in range(100, 375):
+                list_for_token_ids.append(str(i))
+            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
+            async with session.get(url,
+                                  params=alpha_params,
+                                  headers=headers) as res:
+                data = await res.json()
+                for i in data['orders']:
+                    if i['closing_date'] == None:
+                        wei = i['base_price']
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
+            
+            list_for_token_ids = []
+            for i in range(375, 650):
+                list_for_token_ids.append(str(i))
+            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
+            async with session.get(url,
+                                  params=alpha_params,
+                                  headers=headers) as res:
+                data = await res.json()
+                for i in data['orders']:
+                    if i['closing_date'] == None:
+                        wei = i['base_price']
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
+            await asyncio.sleep(1)
+            list_for_token_ids = []
+            for i in range(650, 900):
+                list_for_token_ids.append(str(i))
+            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
+            async with session.get(url,
+                                  params=alpha_params,
+                                  headers=headers) as res:
+                data = await res.json()
+                for i in data['orders']:
+                    if i['closing_date'] == None:
+                        wei = i['base_price']
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
+
+            list_for_token_ids = []
+            for i in range(900, 1000):
+                list_for_token_ids.append(str(i))
+            alpha_params = {"asset_contract_address":"0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8","bundled":"false","include_bundled":"false","include_invalid":"false","token_ids": list_for_token_ids,"side":"1","sale_kind":"0","limit":"20","offset":"0","order_by":"eth_price","order_direction":"asc"}
+            async with session.get(url,
+                                  params=alpha_params,
+                                  headers=headers) as res:
+                data = await res.json()
+                for i in data['orders']:
+                    if i['closing_date'] == None:
+                        wei = i['base_price']
+                        lowest.append((int(wei)/10**18, i['asset']['token_id']))
+            new_lowest = None
+            for i in lowest:
+                if new_lowest != None:
+                    if i[0] < new_lowest[0]:
+                        new_lowest = i
+                else:
+                    new_lowest = i
+            floor.update({'alpha': {'cost': new_lowest[0], 'id': new_lowest[1]}})
+        return floor
 
     async def get_events(self):
         url = "https://api.opensea.io/api/v1/events"
         async with aiohttp.ClientSession() as session:
-            params = {"asset_contract_address":self.contract,"only_opensea":"true","offset":"0","limit": 25}
+            params = {"asset_contract_address":self.contract,"only_opensea":"true","offset":"0","limit": 50}
             async with session.get(url, params=params) as res:
                 if res.status == 200:
                     try:
@@ -458,7 +591,7 @@ class MyClient(discord.Client):
                 activity = f'7 Day vol: {round(vol, 2)}ETH'
         else:
             traits = [{"name": "type", "values": [choice]}]
-            floor = await self.floor_update(traits)
+            floor = await self.floor_update()
             if floor['cost'] != -1:
                 self.latest_floor = floor
             if self.latest_floor["cost"] != -1:
@@ -515,6 +648,10 @@ class MyClient(discord.Client):
                                 embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
                                 channel = client.get_channel(842492651395481640)
                                 await channel.send(file=file, embed=embed)
+                                try:
+                                    await channel.send(file=file, embed=embed)
+                                except Exception as e:
+                                    print(f"failed to send to discord: {e}")
                                 media = self.tweepy.media_upload("CardSummary.jpg")
                                 try:
                                     self.tweepy.update_status(status=f"{title} {event['asset']['external_link']} {event['asset']['permalink']} #ethercards", media_ids=[media.media_id])
@@ -554,13 +691,16 @@ class MyClient(discord.Client):
                                 date = datetime.strptime(event['created_date'], "%Y-%m-%dT%H:%M:%S.%f")
                                 embed.set_footer(text=f"Occured at: {date:%H:%M:%S - %d/%m/%Y}")
                                 channel = client.get_channel(842492651395481640)
-                                await channel.send(embed=embed)
+                                try:
+                                    await channel.send(embed=embed)
+                                except Exception as e:                                                                        
+                                    print(f"failed to send to discord: {e}")
                                 try:
                                     self.tweepy.update_status(status=f"{title} {event['asset_bundle']['permalink']} #ethercards")
                                 except Exception as e:
                                     print(f"failed to post tweet: {e}")
                                 self.posted_events.append(event_info)
-                        if len(self.posted_events) > 50:
+                        if len(self.posted_events) > 100:
                             self.posted_events.pop(0)
 
     @opensea_activity.before_loop
@@ -799,6 +939,12 @@ class MyClient(discord.Client):
             await message.reply(embed=embed, mention_author=True)
 
         if message.content.startswith('!floor'):
+            await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+            floor = await self.floor_update()
+            embed=discord.Embed(title="OpenSea floors", color=0xbe1fda)
+            embed.add_field(name="Floors:", value=f'`Founder: {floor["founder"]["cost"]}ETH - `[Browse](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Founder)\n`Alpha:   `ID: [{floor["alpha"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["alpha"]["id"]}) - {floor["alpha"]["cost"]}ETH - [Browse](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=Alpha)\n`OG:      `ID: [{floor["og"]["id"]}](https://opensea.io/assets/0x97ca7fe0b0288f5eb85f386fed876618fb9b8ab8/{floor["og"]["id"]}) - {floor["og"]["cost"]}ETH - [Browse](https://opensea.io/assets/ether-cards-founder?search[resultModel]=ASSETS&search[sortAscending]=true&search[sortBy]=PRICE&search[stringTraits][0][name]=series&search[stringTraits][0][values][0]=OG)', inline=False)
+            await message.reply(embed=embed, mention_author=True)
+            return
             args = message.content.split(' ')
             embed=discord.Embed(title="OpenSea floors", color=0xbe1fda)
             if len(args) == 1:                
@@ -950,7 +1096,6 @@ class MyClient(discord.Client):
                 await message.reply('Please enter a trait', mention_author=True)
 
         if message.content.startswith('!traitfloors'):
-            return
             await message.add_reaction('\N{WHITE HEAVY CHECK MARK}')
             with open('random_traits.json', encoding="utf8") as trait_data:
                 data = json.load(trait_data)
