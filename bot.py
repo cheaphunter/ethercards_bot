@@ -469,6 +469,7 @@ class MyClient(discord.Client):
                     floor.update({'founder': {'cost': data['collection']['stats']['floor_price']}})
                 except Exception as e:
                     print(f"failed to get founder floor: {e}")
+            await asyncio.sleep(1)
             async with session.get(url,
                                   params=og_params,
                                   headers=headers) as res:
@@ -478,6 +479,7 @@ class MyClient(discord.Client):
                         wei = i['base_price']
                         floor.update({'og': {'cost': int(wei)/10**18, 'id': i['asset']['token_id']}})
                         break
+            await asyncio.sleep(1)
             #alphas require 4 queries 
             list_for_token_ids = []
             lowest = []
@@ -492,7 +494,7 @@ class MyClient(discord.Client):
                     if i['closing_date'] == None:
                         wei = i['base_price']
                         lowest.append((int(wei)/10**18, i['asset']['token_id']))
-            
+            await asyncio.sleep(1)
             list_for_token_ids = []
             for i in range(375, 650):
                 list_for_token_ids.append(str(i))
